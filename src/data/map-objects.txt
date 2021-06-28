@@ -1,0 +1,25 @@
+player
+#description#short=Yourself.#long=It's you.
+#name#value=Player
+#passable#solid=false#light=true
+#view
+#visual#chr=@#color=1
+
+stairs_down
+#description#short=Downwards stairs.#long=Stairs leading downwards.
+#name#value=Stairs Down
+#passable#solid=true#light=true
+#stairs#dir=down
+#visual#chr=>#color=6
+
+stairs_up
+#description#short=Upwards stairs.#long=Stairs leading upwards.
+#name#value=Stairs Up
+#passable#solid=true#light=true
+#stairs#dir=up
+#visual#chr=<#color=6
+
+tree
+#description#short=A tree.#long=It's a common tree.
+#name#value=Tree
+#visual#chr=♣#color=3

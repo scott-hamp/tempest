@@ -1,0 +1,31 @@
+#pragma once
+
+#ifndef UI_H
+#define UI_H
+
+#include <vector>
+#include "console.h"
+
+class LogMessage
+{
+	public:
+		LogMessage(std::string, int);
+		~LogMessage();
+		std::string Value;
+		int ColorPair;
+};
+
+class UI
+{
+	private:
+		static std::vector<LogMessage*> _log;
+		static std::vector<LogMessage*> _logTurn;
+	public:
+		static void draw();
+		static LogMessage* getLogTurn(int = 0);
+		static void log(std::string, int = 1);
+		static void logTurnNext();
+		static void nextTurn();
+};
+
+#endif
