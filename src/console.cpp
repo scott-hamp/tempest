@@ -202,8 +202,19 @@ void Console::setCursor(int i)
 
 void Console::setup(int h, int w)
 {
-	//HWND wincon = GetConsoleWindow();
-	//MoveWindow(wincon, 0, 0, w, h, TRUE);
+	_COORD coord;
+	coord.X = w;
+	coord.Y = h;
+
+	_SMALL_RECT rect;
+	rect.Top = 0;
+	rect.Left = 0;
+	rect.Bottom = h - 1;
+	rect.Right = w - 1;
+
+	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleScreenBufferSize(handle, coord);
+	SetConsoleWindowInfo(handle, TRUE, &rect);
 
 	srand(time(NULL));
 
