@@ -1,9 +1,10 @@
 ﻿#include "map-tile.h"
 
-MapTile::MapTile(MapTileType type, MapTileTerrain terrain) 
+MapTile::MapTile(MapTileType type, MapTileTerrain terrain, int light) 
 { 
 	_type = type; 
 	_terrain = terrain;
+	_light = light;
 }
 
 MapTile::~MapTile() { }
@@ -78,6 +79,8 @@ bool MapTile::isPassable(PassableType passableType)
 	return _type != MapTileType_Empty && _type != MapTileType_Wall;
 }
 
+int MapTile::light() { return _light; }
+
 MapObject* MapTile::object(int i)
 {
 	if (_objects.size() <= i) return nullptr;
@@ -110,6 +113,8 @@ void MapTile::removeObjects()
 void MapTile::set(MapTileType type) { _type = type; }
 
 void MapTile::set(MapTileTerrain terrain) { _terrain = terrain; }
+
+void MapTile::set(int light) { _light = light; }
 
 MapTileTerrain MapTile::terrain() { return _terrain; }
 

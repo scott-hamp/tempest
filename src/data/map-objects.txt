@@ -2,7 +2,7 @@ player
 #description#short=Yourself.#long=It's you.
 #name#value=Player
 #passable#solid=false#light=true
-#view
+#view#distance=8#power=4
 #visual#chr=@#color=1
 
 stairs_down

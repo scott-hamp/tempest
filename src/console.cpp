@@ -202,6 +202,9 @@ void Console::setCursor(int i)
 
 void Console::setup(int h, int w)
 {
+	//HWND wincon = GetConsoleWindow();
+	//MoveWindow(wincon, 0, 0, w, h, TRUE);
+
 	srand(time(NULL));
 
 	initscr();

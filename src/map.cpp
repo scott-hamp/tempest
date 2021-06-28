@@ -106,6 +106,7 @@ void Map::generate()
 			{
 				setTile({ x, y }, MapTileType_Floor);
 				setTile({ x, y }, MapTileTerrain_Grass);
+				setTile({ x, y }, 10);
 			}
 		}
 
@@ -183,18 +184,19 @@ void Map::generate()
 			{
 				setTile({ x, y }, MapTileType_Wall);
 				setTile({ x, y }, MapTileTerrain_Stone);
+				setTile({ x, y }, 3);
 			}
 		}
 
 		std::vector<Rect> rects;
 
-		for (int i = 0; i < 6 + (rand() % 2); i++)
+		for (int i = 0; i < 7 + (rand() % 2); i++)
 		{
 			Rect rect;
 
 			while (true)
 			{
-				rect.Position = { 3 + (rand() % (_size.Width - 11)), 1 + (rand() % (_size.Height - 9)) };
+				rect.Position = { 3 + (rand() % (_size.Width - 12)), 1 + (rand() % (_size.Height - 10)) };
 				rect.Size = { 3 + (rand() % 7), 3 + (rand() % 5) };
 
 				if (rects.size() == 0) break;
@@ -228,6 +230,7 @@ void Map::generate()
 
 					setTile(point, MapTileType_Floor);
 					setTile(point, MapTileTerrain_Stone);
+					setTile(point, 6);
 				}
 			}
 		}
@@ -274,7 +277,7 @@ void Map::generate()
 				if (path->isComplete())
 				{
 					delete path;
-					continue;
+					break;
 				}
 			}
 		}
@@ -440,6 +443,13 @@ std::string Map::getTileDescription(Point2D point, bool longDescription)
 	return _tiles[(point.Y * _size.Width) + point.X]->getDescription(longDescription);
 }
 
+int Map::getTileLight(Point2D point)
+{
+	if (!contains(point)) return 0;
+
+	return _tiles[(point.Y * _size.Width) + point.X]->light();
+}
+
 MapObject* Map::getTileObject(Point2D point, int i)
 {
 	if (!contains(point)) return nullptr;
@@ -556,12 +566,21 @@ MapObject* Map::player()
 
 void Map::setTile(Point2D point, MapTileType type)
 {
+	if (!contains(point)) return;
+
 	_tiles[(point.Y * _size.Width) + point.X]->set(type);
 }
 
 void Map::setTile(Point2D point, MapTileTerrain terrain)
 {
+	if (!contains(point)) return;
+
 	_tiles[(point.Y * _size.Width) + point.X]->set(terrain);
+}
+
+void Map::setTile(Point2D point, int light)
+{
+	_tiles[(point.Y * _size.Width) + point.X]->set(light);
 }
 
 void Map::setup(Size2D size, Point2D drawOffset)
@@ -570,7 +589,7 @@ void Map::setup(Size2D size, Point2D drawOffset)
 	_drawOffset = drawOffset;
 
 	for (int i = 0; i < _size.Width * _size.Height; i++)
-		_tiles.push_back(new MapTile(MapTileType_Empty, MapTileTerrain_Stone));
+		_tiles.push_back(new MapTile(MapTileType_Empty, MapTileTerrain_Stone, 0));
 
 	_player = nullptr;
 }
@@ -588,16 +607,23 @@ void Map::updateObjectView(MapObject* object)
 	}
 
 	auto op = object->position();
+	auto power = stoi(object->getBehaviorProperty(L"view", L"power"));
+	auto distance = stoi(object->getBehaviorProperty(L"view", L"distance"));
 
 	for (int d = 0; d < 360; d++)
 	{
-		for (int l = 0; l < 8; l++)
+		auto powerd = power;
+
+		for (int l = 0; l < distance; l++)
 		{
-			Point2D point = { (int)(op.X + sin(d) * l), (int)(op.Y + cos(d) * l) };
+			Point2D point = { (int)round(op.X + sin(d) * l), (int)round(op.Y + cos(d) * l) };
 
 			if (!contains(point)) break;
 
 			object->setView({ point.X, point.Y }, _size.Width, 2, _tiles[(point.Y * _size.Width) + point.X]->getChr());
+
+			powerd += getTileLight(point) - 10;
+			if (powerd <= 0) break;
 
 			if (!getTilePassable(point, PassableType_Light)) break;
 		}

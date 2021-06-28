@@ -32,6 +32,7 @@ class Map
 		static Path* findPath(Point2D, Point2D);
 		static void generate();
 		static std::string getTileDescription(Point2D, bool = false);
+		static int getTileLight(Point2D);
 		static MapObject* getTileObject(Point2D, int = 0);
 		static bool getTilePassable(Point2D, PassableType);
 		static void moveObject(MapObject*, Point2D);
@@ -42,6 +43,7 @@ class Map
 		static MapObject* player();
 		static void setTile(Point2D, MapTileType);
 		static void setTile(Point2D, MapTileTerrain);
+		static void setTile(Point2D, int);
 		static void setup(Size2D, Point2D);
 		static void updateObjectView(MapObject*);
 };
