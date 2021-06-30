@@ -26,8 +26,11 @@ void Input::handleKey(int key)
 		if (key == 27)
 		{
 			_commandActive = InputCommand_None;
+
 			Console::setCursor(1);
 			Console::CursorPosition = Map::positionToConsolePosition(Map::player()->position());
+			
+			UI::setPanelVisible(UIPanel_Inventory, false);
 			UI::log("Okay then.");
 
 			return;
@@ -63,6 +66,37 @@ void Input::handleKey(int key)
 			return;
 		}
 
+		// Wear / wield
+		if (_commandActive == InputCommand_WearWield)
+		{
+			if (key < 'a' || key > Map::player()->getInventorySize() + 'a')
+				return;
+
+			auto index = key - 'a';
+			Map::objectTryInteraction(Map::player(), MapObjectInteraction_WearWield, Map::player()->getInventory(index));
+
+			_commandActive = InputCommand_None;
+			UI::setPanelVisible(UIPanel_Inventory, false);
+
+			return;
+		}
+
+		return;
+	}
+
+	// UI inventory is open
+	if (UI::panelIsVisible(UIPanel_Equipment) || UI::panelIsVisible(UIPanel_Inventory))
+	{
+		// 'Esc'
+		if (key == 27)
+		{
+			Console::setCursor(1);
+			UI::setPanelVisible(UIPanel_Equipment, false);
+			UI::setPanelVisible(UIPanel_Inventory, false);
+
+			return;
+		}
+
 		return;
 	}
 
@@ -70,6 +104,23 @@ void Input::handleKey(int key)
 	if (key == '<')
 	{
 		Map::objectTryInteraction(Map::player(), MapObjectInteraction_Ascend);
+
+		return;
+	}
+
+	// Descend - '>'
+	if (key == '>')
+	{
+		Map::objectTryInteraction(Map::player(), MapObjectInteraction_Descend);
+
+		return;
+	}
+
+	// Equipment - 'e'
+	if (key == 'e')
+	{
+		Console::setCursor(0);
+		UI::setPanelVisible(UIPanel_Equipment, true);
 
 		return;
 	}
@@ -84,10 +135,26 @@ void Input::handleKey(int key)
 		return;
 	}
 
-	// Descend - '>'
-	if (key == '>')
+	// Inventory - 'i'
+	if (key == 'i')
 	{
-		Map::objectTryInteraction(Map::player(), MapObjectInteraction_Descend);
+		Console::setCursor(0);
+		UI::setPanelVisible(UIPanel_Inventory, true);
+
+		return;
+	}
+
+	// Wear / wield - 'w'
+	if (key == 'w')
+	{
+		_commandActive = InputCommand_WearWield;
+
+		auto size = Map::player()->getInventorySize();
+		char end = 'a' + (size - 1);
+
+		UI::log("Wear / wield what? - (a - " + std::string(1, end) + ")");
+		UI::setPanelVisible(UIPanel_Inventory, true);
+		Console::setCursor(0);
 
 		return;
 	}

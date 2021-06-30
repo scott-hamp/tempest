@@ -15,9 +15,21 @@ void Console::clear()
 void Console::clearLine(int y, int x)
 {
 	std::string v = "";
-	for (int i = x; i < _size.Height; i++) v += " ";
+	for (int i = x; i < _size.Width; i++) v += " ";
 
 	write(y, x, v);
+}
+
+void Console::clearLines(int height)
+{
+	for (int i = 0; i < height; i++)
+		clearLine(i);
+}
+
+void Console::clearLines(int y, int height)
+{
+	for (int i = y; i < y + height; i++)
+		clearLine(i);
 }
 
 void Console::clearRect(Rect r)
@@ -253,6 +265,8 @@ void Console::setup(int h, int w)
 	CursorPosition = { 0, 0 };
 }
 
+Size2D Console::size() { return _size; }
+
 void Console::wait(int ms)
 {
 	auto dur = std::chrono::milliseconds(ms);
@@ -271,6 +285,18 @@ bool Console::windowsSetFont(const wchar_t* fn)
 	
 	wcscpy_s(cfi.FaceName, fn);
 	return SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
+}
+
+void Console::write(int y, int x, const char chr)
+{
+	mvwaddch(_window, y, x, chr);
+}
+
+void Console::write(int y, int x, const char chr, int cp)
+{
+	wattron(_window, COLOR_PAIR(cp));
+	mvwaddch(_window, y, x, chr);
+	wattroff(_window, COLOR_PAIR(cp));
 }
 
 void Console::write(int y, int x, const chtype ct)

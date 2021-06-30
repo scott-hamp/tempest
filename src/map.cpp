@@ -56,6 +56,22 @@ MapObject* Map::createObject(std::wstring id)
 		object->addBehavior(behavior);
 
 		if (behaviorName.compare(L"view") == 0) object->createView(_size);
+		
+		if (behaviorName.compare(L"has-equipment") == 0)
+			object->createEquipmentSlots();
+
+		if (behaviorName.compare(L"has-inventory") == 0)
+		{
+			auto startingItems = behavior->getPropertyValue(L"starting");
+
+			if (startingItems.length() > 0)
+			{
+				auto startingItemsIDs = Strings::split(startingItems, ',');
+
+				for (auto siid : startingItemsIDs)
+					object->addToInventory(createObject(siid));
+			}
+		}
 	}
 
 	return object;
@@ -118,8 +134,8 @@ void Map::generate()
 
 			while (true)
 			{
-				rect.Position = { 3 + (rand() % (_size.Width - 10)), 1 + (rand() % (_size.Height - 10)) };
-				rect.Size = { 3 + (rand() % 7), 3 + (rand() % 7) };
+				rect.Position = { 3 + Random::nextInt(0, _size.Width - 10), 1 + Random::nextInt(0, _size.Height - 8) };
+				rect.Size = { 3 + Random::nextInt(0, 7), 3 + Random::nextInt(0, 5) };
 
 				if (rects.size() == 0) break;
 
@@ -162,7 +178,7 @@ void Map::generate()
 
 			while (true)
 			{
-				point = { rand() % _size.Width, rand() % _size.Height };
+				point = { Random::nextInt(0, _size.Width), Random::nextInt(0, _size.Height) };
 
 				if (point.X > 3 && point.X < _size.Width - 3 && point.Y > 3 && point.Y < _size.Height - 3)
 					continue;
@@ -190,14 +206,14 @@ void Map::generate()
 
 		std::vector<Rect> rects;
 
-		for (int i = 0; i < 7 + (rand() % 2); i++)
+		for (int i = 0; i < 7 + Random::nextInt(0, 2); i++)
 		{
 			Rect rect;
 
 			while (true)
 			{
-				rect.Position = { 3 + (rand() % (_size.Width - 12)), 1 + (rand() % (_size.Height - 10)) };
-				rect.Size = { 3 + (rand() % 7), 3 + (rand() % 5) };
+				rect.Position = { 3 + Random::nextInt(0, _size.Width - 12), 1 + Random::nextInt(0, _size.Height - 10) };
+				rect.Size = { 3 + Random::nextInt(0, 7), 3 + Random::nextInt(0, 5) };
 
 				if (rects.size() == 0) break;
 
@@ -262,7 +278,7 @@ void Map::generate()
 					continue;
 				}
 
-				if (at.X != to.X && rand() % 10 >= 2)
+				if (at.X != to.X && Random::nextInt(0, 10) >= 2)
 				{
 					if (to.X > at.X) at.X++;
 					if (to.X < at.X) at.X--;
@@ -285,7 +301,7 @@ void Map::generate()
 
 	while (true && _depth > 0)
 	{
-		Point2D point = { rand() % _size.Width, rand() % _size.Height };
+		Point2D point = { Random::nextInt(0, _size.Width), Random::nextInt(0, _size.Height) };
 
 		if (!getTilePassable(point, PassableType_Solid) || getTileObject(point) != nullptr)
 			continue;
@@ -297,7 +313,7 @@ void Map::generate()
 
 	while (true && _depth < 50)
 	{
-		Point2D point = { rand() % _size.Width, rand() % _size.Height };
+		Point2D point = { Random::nextInt(0, _size.Width), Random::nextInt(0, _size.Height) };
 
 		if (!getTilePassable(point, PassableType_Solid) || getTileObject(point) != nullptr)
 			continue;
@@ -309,7 +325,7 @@ void Map::generate()
 
 	while (true)
 	{
-		Point2D point = { rand() % _size.Width, rand() % _size.Height };
+		Point2D point = { Random::nextInt(0, _size.Width), Random::nextInt(0, _size.Height) };
 
 		if (!getTilePassable(point, PassableType_Solid))
 			continue;
@@ -538,6 +554,45 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 	}
 }
 
+void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interaction, MapObject* other)
+{
+	// Wear / wield
+	if (interaction == MapObjectInteraction_WearWield)
+	{
+		auto eqat1 = object->getEquippedSlot(other);
+		object->tryInteraction(MapObjectInteraction_WearWield, other);
+		auto eqat2 = object->getEquippedSlot(other);
+
+		if (eqat1.compare(eqat2) == 0)
+		{
+			if (object == _player)
+			{
+				if(eqat1.length() == 0)
+					UI::log("You can't equip that.");
+				else
+					UI::log("You can't take that off!");
+			}
+
+			return;
+		}
+
+		auto otherName = Strings::toLower(Strings::from(other->getBehaviorProperty(L"name", L"value")));
+
+		if (eqat2.compare(L"") != 0)
+		{
+			if (object == _player)
+				UI::log("You ready the " + otherName + ".");
+
+			return;
+		}
+
+		if (object == _player)
+			UI::log("You put away the " + otherName + ".");
+
+		return;
+	}
+}
+
 void Map::placeObject(MapObject* object, Point2D point)
 {
 	if (!contains(point)) return;
@@ -609,6 +664,15 @@ void Map::updateObjectView(MapObject* object)
 	auto op = object->position();
 	auto power = stoi(object->getBehaviorProperty(L"view", L"power"));
 	auto distance = stoi(object->getBehaviorProperty(L"view", L"distance"));
+
+	int powerMod = 0;
+	auto effects = object->getEquippedEffect(L"view-power");
+	for (auto e : effects)
+		powerMod += stoi(Strings::split(e, L':')[1]);
+
+	power += powerMod;
+
+	if (object == _player) Console::debug("VP: " + std::to_string(power));
 
 	for (int d = 0; d < 360; d++)
 	{

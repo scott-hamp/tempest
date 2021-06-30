@@ -28,6 +28,8 @@ public:
 	static Point2D CursorPosition;
 	static void clear();
 	static void clearLine(int, int = 0);
+	static void clearLines(int);
+	static void clearLines(int, int);
 	static void clearRect(Rect);
 	static void debug(std::string);
 	static void end();
@@ -44,8 +46,11 @@ public:
 	static void refreshKeyERR();
 	static void setCursor(int);
 	static void setup(int, int);
+	static Size2D size();
 	static void wait(int);
 	static bool windowsSetFont(const wchar_t*);
+	static void write(int, int, const char);
+	static void write(int, int, const char, int);
 	static void write(int, int, const chtype);
 	static void write(int, int, const chtype, int);
 	static void write(int, int, const char*);

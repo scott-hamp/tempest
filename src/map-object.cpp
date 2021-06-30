@@ -55,6 +55,17 @@ void MapObject::addBehavior(MapObjectBehavior* behavior)
 	_behaviors.push_back(behavior);
 }
 
+void MapObject::addToInventory(MapObject* object)
+{
+	if (object == nullptr || !hasBehavior(L"has-inventory"))
+		return;
+	if (!object->hasBehavior(L"item")) return;
+	if (std::find(_inventory.begin(), _inventory.end(), object) != _inventory.end())
+		return;
+
+	_inventory.push_back(object);
+}
+
 void MapObject::clearView()
 {
 	for (int i = 0; i < _view.size(); i++)
@@ -62,6 +73,23 @@ void MapObject::clearView()
 		_view[i]->State = 0;
 		_view[i]->Chr = L' ';
 	}
+}
+
+void MapObject::createEquipmentSlots()
+{
+	_equipment[L"on head"] = nullptr;
+	_equipment[L"on face"] = nullptr;
+	_equipment[L"on shoulders"] = nullptr;
+	_equipment[L"on chest"] = nullptr;
+	_equipment[L"on hands"] = nullptr;
+	_equipment[L"in right hand"] = nullptr;
+	_equipment[L"in left hand"] = nullptr;
+	_equipment[L"on right ring finger"] = nullptr;
+	_equipment[L"on left ring finger"] = nullptr;
+	_equipment[L"on legs"] = nullptr;
+	_equipment[L"on feet"] = nullptr;
+	_equipment[L"about body"] = nullptr;
+	_equipment[L"as light source"] = nullptr;
 }
 
 void MapObject::createView(Size2D size)
@@ -84,6 +112,96 @@ std::wstring MapObject::getBehaviorProperty(std::wstring behaviorName, std::wstr
 	return L"";
 }
 
+MapObject* MapObject::getEquipment(std::wstring slot)
+{
+	if (!hasBehavior(L"has-equipment") || !hasBehavior(L"has-inventory"))
+		return nullptr;
+
+	for (std::map<std::wstring, MapObject*>::iterator iter = _equipment.begin(); iter != _equipment.end(); ++iter)
+	{
+		if (iter->first.compare(slot) != 0) continue;
+
+		return iter->second;
+	}
+
+	return nullptr;
+}
+
+std::vector<std::wstring> MapObject::getEquipmentSlots()
+{
+	std::vector<std::wstring> result;
+
+	if (!hasBehavior(L"has-equipment") || !hasBehavior(L"has-inventory")) 
+		return result;
+
+	for (std::map<std::wstring, MapObject*>::iterator iter = _equipment.begin(); iter != _equipment.end(); ++iter)
+		result.push_back(iter->first);
+
+	return result;
+}
+
+std::wstring MapObject::getEquippedSlot(MapObject* item)
+{
+	if (!hasItem(item) || !hasBehavior(L"has-equipment") || !item->hasBehavior(L"equipment"))
+		return L"";
+
+	for (std::map<std::wstring, MapObject*>::iterator iter = _equipment.begin(); iter != _equipment.end(); ++iter)
+	{
+		auto k = iter->first;
+		auto v = iter->second;
+
+		if (v != item) continue;
+
+		return k;
+	}
+
+	return L"";
+}
+
+std::vector<std::wstring> MapObject::getEquippedEffect(std::wstring effect)
+{
+	std::vector<std::wstring> result;
+
+	if (!hasBehavior(L"has-equipment") || !hasBehavior(L"has-inventory")) 
+		return result;
+
+	for (std::map<std::wstring, MapObject*>::iterator iter = _equipment.begin(); iter != _equipment.end(); ++iter)
+	{
+		auto item = iter->second;
+		if (item == nullptr) continue;
+
+		auto effects = item->getBehaviorProperty(L"equipment", L"equipped-effects");
+
+		if (effects.length() == 0) continue;
+
+		auto effectsSplit = Strings::split(effects, L';');
+
+		for (auto e : effectsSplit)
+		{
+			auto parts = Strings::split(e, L':');
+
+			if (parts.size() != 2) continue;
+			if (parts[0].compare(effect) != 0) continue;
+
+			result.push_back(e);
+		}
+	}
+
+	return result;
+}
+
+MapObject* MapObject::getInventory(int index)
+{
+	if (index >= _inventory.size()) return nullptr;
+
+	return _inventory[index];
+}
+
+int MapObject::getInventorySize()
+{
+	return _inventory.size();
+}
+
 MapObjectView* MapObject::getView(Point2D point, int width)
 {
 	return _view[(point.Y * width) + point.X];
@@ -99,6 +217,14 @@ bool MapObject::hasBehavior(std::wstring behaviorName)
 	}
 
 	return false;
+}
+
+bool MapObject::hasItem(MapObject* item)
+{
+	if (!hasBehavior(L"has-inventory") || !item->hasBehavior(L"item")) 
+		return false;
+
+	return std::find(_inventory.begin(), _inventory.end(), item) != _inventory.end();
 }
 
 bool MapObject::isPassable(PassableType passableType)
@@ -120,6 +246,56 @@ void MapObject::nextTurn()
 }
 
 Point2D MapObject::position() { return _position; }
+
+void MapObject::removeFromInventory(MapObject* object)
+{
+	if (object == nullptr || !hasBehavior(L"has-inventory")) 
+		return;
+	if (!object->hasBehavior(L"item")) return;
+	if (std::find(_inventory.begin(), _inventory.end(), object) == _inventory.end())
+		return;
+
+	auto ind = -1;
+	for (int i = 0; i < _inventory.size(); i++)
+	{
+		if (_inventory[i] != object) continue;
+
+		ind = i;
+		break;
+	}
+
+	_inventory.erase(_inventory.begin() + ind);
+}
+
+void MapObject::tryInteraction(MapObjectInteraction interaction)
+{
+
+}
+
+void MapObject::tryInteraction(MapObjectInteraction interaction, MapObject* other)
+{
+	if (interaction == MapObjectInteraction_WearWield)
+	{
+		if (!hasBehavior(L"has-equipment") || !other->hasBehavior(L"item"))
+			return;
+
+		auto eqat = other->getBehaviorProperty(L"equipment", L"equip-at");
+		if (eqat.length() == 0) return;
+
+		takeTurnAction();
+
+		if (getEquippedSlot(other) != L"")
+		{
+			_equipment[eqat] = nullptr;
+
+			return;
+		}
+
+		_equipment[eqat] = other;
+
+		return;
+	}
+}
 
 void MapObject::setPosition(Point2D point) { _position = point; }
 

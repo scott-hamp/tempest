@@ -9,6 +9,7 @@
 #include "enums.h"
 #include "map-tile.h"
 #include "map-object.h"
+#include "random.h"
 #include "ui.h"
 
 class Path;
@@ -39,6 +40,7 @@ class Map
 		static void nextTurn();
 		static void objectTryInteraction(MapObject*, MapObjectInteraction);
 		static void objectTryInteraction(MapObject*, MapObjectInteraction, Direction2D);
+		static void objectTryInteraction(MapObject*, MapObjectInteraction, MapObject*);
 		static void placeObject(MapObject*, Point2D);
 		static MapObject* player();
 		static void setTile(Point2D, MapTileType);

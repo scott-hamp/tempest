@@ -1,5 +1,15 @@
 #include "strings.h"
 
+std::string Strings::from(std::wstring wstr)
+{
+	std::wstring w(wstr);
+	std::string result;
+	for (char x : w)
+		result += x;
+
+	return result;
+}
+
 std::vector<std::string> Strings::split(std::string str, char del)
 {
 	std::string tmp = "";
