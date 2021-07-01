@@ -65,15 +65,21 @@ void UI::draw()
 
 	if (panelIsVisible(UIPanel_Log))
 	{
-		auto lm = getLogTurn();
-		if (lm != nullptr)
-			Console::write(0, 1, lm->Value, lm->ColorPair);
+		int y = 0;
+		for (auto lm : _logTurn)
+		{
+			Console::clearLine(y);
+			Console::write(y, 1, lm->Value, lm->ColorPair);
+			y++;
+		}
 	}
 
 	if (panelIsVisible(UIPanel_Stats))
 	{
-		Console::write(22, 1, "(Player)  HP: 12/12  STR: 8  DEX: 11  CON: 13  INT: 7  WIS: 9");
-		Console::write(23, 1, "LVL: 1  XP: 10  Village");
+		auto attributes = Strings::split(Map::player()->getBehaviorProperty(L"attributes", L"value"), L',');
+
+		Console::write(22, 1, L"(Player)  HP: 12/12  STR: " + attributes[0] + L"  DEX: " + attributes[1] + L"  CON: " + attributes[2] + L"  INT: " + attributes[3] + L"  WIS: " + attributes[4] + L"  CHA: " + attributes[5]);
+		Console::write(23, 1, L"LVL: 1  XP: 10  Village");
 	}
 }
 

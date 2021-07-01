@@ -114,6 +114,8 @@ void Map::draw()
 
 void Map::generate()
 {
+	// At the village
+
 	if (_depth == 0)
 	{
 		for (int x = 0; x < _size.Width; x++)
@@ -194,6 +196,8 @@ void Map::generate()
 	}
 	else
 	{
+		// In the caves
+
 		for (int x = 0; x < _size.Width; x++)
 		{
 			for (int y = 0; y < _size.Height; y++)
@@ -293,6 +297,56 @@ void Map::generate()
 				if (path->isComplete())
 				{
 					delete path;
+					break;
+				}
+			}
+		}
+
+		auto monsterNames = Data::getObjectList(L"MONSTERS");
+		std::vector<std::wstring> monsterNamesSelected;
+
+		for (auto mn : monsterNames)
+		{
+			auto passes = false;
+			auto monsterData = Data::getObject(mn);
+			for (int i = 0; i < monsterData.size(); i++)
+			{
+				auto line = monsterData[i].substr(1);
+				auto parts = Strings::split(line, L'#');
+
+				if (parts[0].compare(L"spawn") != 0) continue;
+
+				parts = Strings::split(parts[1], L'=');
+				parts = Strings::split(parts[1], L'-');
+
+				auto min = stoi(parts[0]);
+				auto max = stoi(parts[1]);
+
+				if (_depth < min || _depth > max) continue;
+
+				passes = true;
+				break;
+			}
+
+			if (!passes) continue;
+
+			monsterNamesSelected.push_back(mn);
+		}
+
+		if (monsterNamesSelected.size() > 0)
+		{
+			for (int i = 0; i < 8 + Random::nextInt(0, 2); i++)
+			{
+				while (true)
+				{
+					Point2D point = { Random::nextInt(0, _size.Width), Random::nextInt(0, _size.Height) };
+
+					if (!getTilePassable(point, PassableType_Solid) || getTileObject(point) != nullptr)
+						continue;
+
+					auto monster = createObject(monsterNamesSelected[Random::nextInt(0, monsterNamesSelected.size())]);
+					placeObject(monster, point);
+
 					break;
 				}
 			}
@@ -531,6 +585,7 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 
 void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interaction, Direction2D direction)
 {
+	// Move
 	if (interaction == MapObjectInteraction_Move)
 	{
 		auto to = Point2D::add(object->position(), direction);
@@ -539,6 +594,14 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 		{
 			if (object == _player && !contains(to))
 				UI::log("You couldn't bear to leave your village.");
+			else
+			{
+				auto other = getTileObject(to);
+				if (other == nullptr) return;
+				if (!object->hasBehavior(L"attack") || !other->hasBehavior(L"attack")) return;
+
+				objectTryInteraction(object, MapObjectInteraction_Attack, other);
+			}
 
 			return;
 		}
@@ -556,6 +619,57 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 
 void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interaction, MapObject* other)
 {
+	// Attack
+	if (interaction == MapObjectInteraction_Attack)
+	{
+		object->takeTurnAction();
+
+		std::string toHitRollExpression = "1d20";
+		auto toHitStr = Strings::from(object->getBehaviorProperty(L"attack", L"to-hit"));
+		auto toHitInt = stoi(toHitStr);
+		toHitRollExpression += (toHitInt >= 0) ? "+" : "";
+		toHitRollExpression += toHitStr;
+		auto toHitRoll = new DiceRoll(toHitRollExpression);
+		auto ac = stoi(other->getBehaviorProperty(L"ac", L"value"));
+
+		auto objectName = Strings::toLower(Strings::from(object->getBehaviorProperty(L"name", L"value")));
+		auto otherName = Strings::toLower(Strings::from(other->getBehaviorProperty(L"name", L"value")));
+
+		if (toHitRoll->roll() <= ac)
+		{
+			if (object == _player)
+				UI::log("You miss the " + otherName + ".");
+			if (other == _player)
+				UI::log("The " + otherName + " misses you.");
+
+			delete toHitRoll;
+			return;
+		}
+
+		auto damageRoll = new DiceRoll(Strings::from(object->getBehaviorProperty(L"attack", L"dmg-roll")));
+		auto damage = damageRoll->roll();
+
+		other->takeDamage(damage);
+
+		if (object == _player)
+			UI::log("You " + Strings::from(object->getBehaviorProperty(L"attack", L"verb")) + " the " + otherName + ".");
+		if (other == _player)
+			UI::log("The " + otherName + " " + Strings::from(other->getBehaviorProperty(L"attack", L"verb")) + " you.");
+
+		if (stoi(other->getBehaviorProperty(L"hp", L"value")) <= 0)
+		{
+			if (other != _player)
+			{
+				removeObject(other);
+				UI::log("You kill the " + otherName + "!");
+			}
+		}
+
+		delete toHitRoll; delete damageRoll;
+
+		return;
+	}
+
 	// Wear / wield
 	if (interaction == MapObjectInteraction_WearWield)
 	{
@@ -619,6 +733,23 @@ MapObject* Map::player()
 	return _player;
 }
 
+void Map::removeObject(MapObject* object)
+{
+	for (int i = 0; i < _size.Width * _size.Height; i++)
+		_tiles[i]->removeObject(object);
+
+	auto ind = -1;
+	for (int i = 0; i < _objects.size(); i++)
+	{
+		if (_objects[i] != object) continue;
+
+		ind = i;
+		break;
+	}
+
+	_objects.erase(_objects.begin() + ind);
+}
+
 void Map::setTile(Point2D point, MapTileType type)
 {
 	if (!contains(point)) return;
@@ -664,15 +795,6 @@ void Map::updateObjectView(MapObject* object)
 	auto op = object->position();
 	auto power = stoi(object->getBehaviorProperty(L"view", L"power"));
 	auto distance = stoi(object->getBehaviorProperty(L"view", L"distance"));
-
-	int powerMod = 0;
-	auto effects = object->getEquippedEffect(L"view-power");
-	for (auto e : effects)
-		powerMod += stoi(Strings::split(e, L':')[1]);
-
-	power += powerMod;
-
-	if (object == _player) Console::debug("VP: " + std::to_string(power));
 
 	for (int d = 0; d < 360; d++)
 	{

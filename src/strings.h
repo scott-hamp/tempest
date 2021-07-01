@@ -12,7 +12,9 @@ class Strings
 	public:
 		static std::string from(std::wstring);
 		static std::vector<std::string> split(std::string, char);
+		static std::vector<std::string> split(std::string, std::vector<char>);
 		static std::vector<std::wstring> split(std::wstring, wchar_t);
+		static std::vector<std::wstring> split(std::wstring, std::vector<wchar_t>);
 		static std::string toLower(std::string);
 		static std::string toTitle(std::string, bool = false);
 		static std::string toUpper(std::string);

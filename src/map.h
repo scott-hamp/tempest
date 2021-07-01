@@ -6,10 +6,10 @@
 #include <vector>
 #include "console.h"
 #include "data.h"
+#include "dice.h"
 #include "enums.h"
 #include "map-tile.h"
 #include "map-object.h"
-#include "random.h"
 #include "ui.h"
 
 class Path;
@@ -43,6 +43,7 @@ class Map
 		static void objectTryInteraction(MapObject*, MapObjectInteraction, MapObject*);
 		static void placeObject(MapObject*, Point2D);
 		static MapObject* player();
+		static void removeObject(MapObject*);
 		static void setTile(Point2D, MapTileType);
 		static void setTile(Point2D, MapTileTerrain);
 		static void setTile(Point2D, int);

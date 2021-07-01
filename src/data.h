@@ -16,8 +16,12 @@
 
 class Data
 {
+	private:
+		static std::vector<std::wstring> _mapObjectsLines;
 	public:
 		static std::vector<std::wstring> getObject(std::wstring);
+		static std::vector<std::wstring> getObjectList(std::wstring);
+		static void load();
 };
 
 #endif

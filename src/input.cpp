@@ -11,13 +11,6 @@ void Input::handle(int key)
 
 void Input::handleKey(int key)
 {
-	auto uilt = UI::getLogTurn(1);
-	if (uilt != nullptr)
-	{
-		UI::logTurnNext();
-		return;
-	}
-
 	auto direction = Console::getDirection(key);
 
 	if (_commandActive != InputCommand_None)

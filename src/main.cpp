@@ -1,4 +1,6 @@
 ﻿#include "console.h"
+#include "data.h"
+#include "dice.h"
 #include "input.h"
 #include "map.h"
 #include "random.h"
@@ -9,8 +11,8 @@ int main()
 	Console::setup(24, 80);
 	Console::windowsSetFont(L"Consolas");
 	
+	Data::load();
 	Random::setSeed();
-
 	UI::setup();
 
 	Map::setup({ 80, 21 }, { 0, 1 });

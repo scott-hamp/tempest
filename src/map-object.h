@@ -20,6 +20,7 @@ class MapObjectBehaviorProperty
 		MapObjectBehaviorProperty(std::wstring, std::wstring);
 		~MapObjectBehaviorProperty();
 		std::wstring key();
+		void setValue(std::wstring);
 		std::wstring value();
 };
 
@@ -34,6 +35,7 @@ class MapObjectBehavior
 		void addProperty(MapObjectBehaviorProperty*);
 		std::wstring getPropertyValue(std::wstring);
 		std::wstring name();
+		void setPropertyValue(std::wstring, std::wstring);
 };
 
 class MapObjectView
@@ -53,6 +55,7 @@ class MapObject
 		std::vector<MapObject*> _inventory;
 		Point2D _position;
 		int _turnActions;
+		std::vector<MapObjectView*> _view;
 	public:
 		MapObject();
 		~MapObject();
@@ -76,13 +79,15 @@ class MapObject
 		Point2D position();
 		void removeFromInventory(MapObject*);
 		void setPosition(Point2D);
+		void setBehaviorProperty(std::wstring, std::wstring, std::wstring);
 		void setView(Point2D, int, int);
 		void setView(Point2D, int, int, wchar_t);
+		void takeDamage(int);
 		void takeTurnAction();
 		void tryInteraction(MapObjectInteraction);
 		void tryInteraction(MapObjectInteraction, MapObject*);
 		bool turnActionRemaining();
-		std::vector<MapObjectView*> _view;
+		void updateEquipmentEffects();
 };
 
 #endif

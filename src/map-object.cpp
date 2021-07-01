@@ -10,6 +10,11 @@ MapObjectBehaviorProperty::~MapObjectBehaviorProperty() { }
 
 std::wstring MapObjectBehaviorProperty::key() { return _key; }
 
+void MapObjectBehaviorProperty::setValue(std::wstring value) 
+{ 
+	_value = value;
+}
+
 std::wstring MapObjectBehaviorProperty::value() { return _value; }
 
 
@@ -35,6 +40,17 @@ std::wstring MapObjectBehavior::getPropertyValue(std::wstring key)
 }
 
 std::wstring MapObjectBehavior::name() { return _name; }
+
+void MapObjectBehavior::setPropertyValue(std::wstring key, std::wstring value)
+{
+	for (const auto& prop : _properties)
+	{
+		if (prop->key().compare(key) != 0) continue;
+
+		prop->setValue(value);
+		return;
+	}
+}
 
 
 MapObjectView::MapObjectView(int state, wchar_t chr)
@@ -285,14 +301,23 @@ void MapObject::tryInteraction(MapObjectInteraction interaction, MapObject* othe
 		takeTurnAction();
 
 		if (getEquippedSlot(other) != L"")
-		{
 			_equipment[eqat] = nullptr;
+		else
+			_equipment[eqat] = other;
 
-			return;
-		}
+		updateEquipmentEffects();
 
-		_equipment[eqat] = other;
+		return;
+	}
+}
 
+void MapObject::setBehaviorProperty(std::wstring behaviorName, std::wstring propertyKey, std::wstring propertyValue)
+{
+	for (const auto& behavior : _behaviors)
+	{
+		if (behavior->name().compare(behaviorName) != 0) continue;
+
+		behavior->setPropertyValue(propertyKey, propertyValue);
 		return;
 	}
 }
@@ -312,9 +337,29 @@ void MapObject::setView(Point2D point, int width, int state, wchar_t chr)
 	v->Chr = chr;
 }
 
+void MapObject::takeDamage(int damage)
+{
+	auto hp = stoi(getBehaviorProperty(L"hp", L"value"));
+	hp -= damage;
+	setBehaviorProperty(L"hp", L"value", std::to_wstring(hp));
+}
+
 void MapObject::takeTurnAction()
 {
 	if (turnActionRemaining()) _turnActions--;
 }
 
 bool MapObject::turnActionRemaining() { return _turnActions > 0; }
+
+void MapObject::updateEquipmentEffects()
+{
+	auto viewPower = stoi(getBehaviorProperty(L"view", L"power-default"));
+
+	int viewPowerMod = 0;
+	auto effects = getEquippedEffect(L"view-power");
+	for (auto e : effects)
+		viewPowerMod += stoi(Strings::split(e, L':')[1]);
+
+	viewPower += viewPowerMod;
+	setBehaviorProperty(L"view", L"power", std::to_wstring(viewPower));
+}

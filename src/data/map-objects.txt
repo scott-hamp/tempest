@@ -1,8 +1,16 @@
+@MONSTERS:wild_dog
+
 player
+#ac#value=3#default-value=3
+#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=hit#verb-default=hit
+#attributes#value=5,5,5,5,5,5#default-value=5,5,5,5,5,5
 #description#short=Yourself.#long=It's you.
+#hp#value=10
 #name#value=Player
+#has-equipment
+#has-inventory#starting=wooden_torch
 #passable#solid=false#light=true
-#view#distance=8#power=4
+#view#distance=8#power=4#power-default=4
 #visual#chr=@#color=1
 
 stairs_down
@@ -23,3 +31,21 @@ tree
 #description#short=A tree.#long=It's a common tree.
 #name#value=Tree
 #visual#chr=♣#color=3
+
+wild_dog
+#ac#value=3#default-value=3
+#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=bites#verb-default=bites
+#description#short=A wild dog.#long=A vicious wild dog driven mad with hunger.
+#hp#value=4
+#name#value=Wild Dog
+#passable#solid=false#light=true
+#spawn#depth=1-5
+#visual#chr=c#color=2
+
+wooden_torch
+#description#short=A wooden torch.#long=It's a simple torch.
+#equipment#equip-at=as light source#equipped-effects=view-power:5
+#item
+#name#value=Torch
+#passable#solid=true#light=true
+#visual#chr=/#color=1

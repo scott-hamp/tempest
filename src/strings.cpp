@@ -21,7 +21,32 @@ std::vector<std::string> Strings::split(std::string str, char del)
 		{
 			if (tmp.length() == 0) continue;
 
-			res.push_back(tmp);
+			if (tmp.length() > 0) res.push_back(tmp);
+			tmp = "";
+
+			continue;
+		}
+
+		tmp += str[i];
+	}
+
+	if (tmp.length() > 0) res.push_back(tmp);
+
+	return res;
+}
+
+std::vector<std::string> Strings::split(std::string str, std::vector<char> dels)
+{
+	std::string tmp = "";
+	std::vector<std::string> res;
+
+	for (int i = 0; i < str.length(); i++)
+	{
+		if (std::find(dels.begin(), dels.end(), str[i]) != dels.end())
+		{
+			if (tmp.length() == 0) continue;
+
+			if(tmp.length() > 0) res.push_back(tmp);
 			tmp = "";
 
 			continue;
@@ -46,7 +71,32 @@ std::vector<std::wstring> Strings::split(std::wstring str, wchar_t del)
 		{
 			if (tmp.length() == 0) continue;
 
-			res.push_back(tmp);
+			if (tmp.length() > 0) res.push_back(tmp);
+			tmp = L"";
+
+			continue;
+		}
+
+		tmp += str[i];
+	}
+
+	if (tmp.length() > 0) res.push_back(tmp);
+
+	return res;
+}
+
+std::vector<std::wstring> Strings::split(std::wstring str, std::vector<wchar_t> dels)
+{
+	std::wstring tmp = L"";
+	std::vector<std::wstring> res;
+
+	for (int i = 0; i < str.length(); i++)
+	{
+		if (std::find(dels.begin(), dels.end(), str[i]) != dels.end())
+		{
+			if (tmp.length() == 0) continue;
+
+			if (tmp.length() > 0) res.push_back(tmp);
 			tmp = L"";
 
 			continue;
