@@ -40,6 +40,11 @@ struct Point2D
 	}
 };
 
+struct Scale2D
+{
+	double X, Y;
+};
+
 struct Size2D
 {
 	int Width, Height;

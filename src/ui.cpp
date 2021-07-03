@@ -1,4 +1,4 @@
-#include "ui.h"
+﻿#include "ui.h"
 
 LogMessage::LogMessage(std::string value, int colorPair)
 {
@@ -21,8 +21,8 @@ void UI::draw()
 
 		Console::clearLines(1, Console::size().Height - 3);
 
-		Console::write(2, 1, "Equipment: ");
-		Console::write(3, 1, "~~~~~~~~~~ ");
+		Console::write(L"Equipment: ", { 1, 2 });
+		Console::write(L"────────── ", { 1, 3 });
 
 		auto l = 0;
 		for (auto slot : slots)
@@ -32,10 +32,10 @@ void UI::draw()
 			std::wstring itemStr = L"(nothing)";
 
 			if (item != nullptr) itemStr = item->getBehaviorProperty(L"description", L"short");
-			auto itemStrCP = (item == nullptr) ? 8 : 1;
+			auto itemStrColor = (item == nullptr) ? "dark-grey" : "yellow";
 
-			Console::write(l + 4, 1, slotStr);
-			Console::write(l + 4, 25, itemStr, itemStrCP);
+			Console::write(slotStr, { 1, l + 4 });
+			Console::write(itemStr, { 25, l + 4 }, Console::getColor(itemStrColor));
 			l++;
 		}
 	}
@@ -46,8 +46,8 @@ void UI::draw()
 
 		Console::clearLines(1, Console::size().Height - 3);
 
-		Console::write(2, 1, "Inventory: ");
-		Console::write(3, 1, "~~~~~~~~~~ ");
+		Console::write(L"Inventory: ", { 1, 2 });
+		Console::write(L"────────── ", { 1, 3 });
 
 		for (int i = 0; i < size; i++)
 		{
@@ -58,8 +58,8 @@ void UI::draw()
 
 			if (eqat.length() > 0) details += L"(" + eqat + L")";
 
-			Console::write(i + 4, 1, letter);
-			Console::write(i + 4, 2, L". " + details);
+			Console::write(letter, { 1, i + 4 });
+			Console::write(L". " + details, { 2, i + 4 });
 		}
 	}
 
@@ -69,7 +69,9 @@ void UI::draw()
 		for (auto lm : _logTurn)
 		{
 			Console::clearLine(y);
-			Console::write(y, 1, lm->Value, lm->ColorPair);
+			auto str = lm->Value;
+			std::wstring wstr(str.begin(), str.end());
+			Console::write(wstr, { 1, y });
 			y++;
 		}
 	}
@@ -78,8 +80,8 @@ void UI::draw()
 	{
 		auto attributes = Strings::split(Map::player()->getBehaviorProperty(L"attributes", L"value"), L',');
 
-		Console::write(22, 1, L"(Player)  HP: 12/12  STR: " + attributes[0] + L"  DEX: " + attributes[1] + L"  CON: " + attributes[2] + L"  INT: " + attributes[3] + L"  WIS: " + attributes[4] + L"  CHA: " + attributes[5]);
-		Console::write(23, 1, L"LVL: 1  XP: 10  Village");
+		Console::write(L"(Player)  HP: 12/12  STR: " + attributes[0] + L"  DEX: " + attributes[1] + L"  CON: " + attributes[2] + L"  INT: " + attributes[3] + L"  WIS: " + attributes[4] + L"  CHA: " + attributes[5], { 1, 22 });
+		Console::write(L"LVL: 1  XP: 10  Village", { 1, 23 });
 	}
 }
 

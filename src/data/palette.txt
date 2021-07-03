@@ -1,0 +1,18 @@
+dark-red:166,74,46,255
+bright-red:215,66,0,255
+dark-orange:241,95,34,255
+bright-orange:233,159,16,255
+brown:152,135,95,255
+yellow:207,192,65,255
+dark-green:0,148,3,255
+bright-green:0,196,32,255
+dark-blue:0,72,189,255
+bright-blue:0,150,255,255
+dark-cyan:64,164,185,255
+bright-cyan:119,191,207,255
+dark-magenta:177,84,207,255
+bright-magenta:218,91,214,255
+background:15,25,45,255
+dark-grey:21, 83, 82,255
+bright-grey:177,201,195,255
+white:255,255,255,255

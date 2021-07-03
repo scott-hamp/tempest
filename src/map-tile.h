@@ -19,7 +19,8 @@ class MapTile
 		~MapTile();
 		void addObject(MapObject*);
 		wchar_t getChr();
-		int getColorPair();
+		std::string getColorBG();
+		std::string getColorFG();
 		std::string getDescription(bool = false);
 		bool isPassable(PassableType);
 		int light();

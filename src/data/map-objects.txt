@@ -11,26 +11,26 @@ player
 #has-inventory#starting=wooden_torch
 #passable#solid=false#light=true
 #view#distance=8#power=4#power-default=4
-#visual#chr=@#color=1
+#visual#chr=@#color-fg=bright-green#color-bg=background
 
 stairs_down
 #description#short=Downwards stairs.#long=Stairs leading downwards.
 #name#value=Stairs Down
 #passable#solid=true#light=true
 #stairs#dir=down
-#visual#chr=>#color=6
+#visual#chr=>#color-fg=bright-magenta#color-bg=background
 
 stairs_up
 #description#short=Upwards stairs.#long=Stairs leading upwards.
 #name#value=Stairs Up
 #passable#solid=true#light=true
 #stairs#dir=up
-#visual#chr=<#color=6
+#visual#chr=<#color-fg=bright-magenta#color-bg=background
 
 tree
 #description#short=A tree.#long=It's a common tree.
 #name#value=Tree
-#visual#chr=♣#color=3
+#visual#chr=♣#color-fg=bright-green#color-bg=background
 
 wild_dog
 #ac#value=3#default-value=3
@@ -40,12 +40,12 @@ wild_dog
 #name#value=Wild Dog
 #passable#solid=false#light=true
 #spawn#depth=1-5
-#visual#chr=c#color=2
+#visual#chr=c#color-fg=dark-red#color-bg=background
 
 wooden_torch
 #description#short=A wooden torch.#long=It's a simple torch.
-#equipment#equip-at=as light source#equipped-effects=view-power:5
+#equipment#equip-at=as light source#equipped-effects=view-power:10
 #item
 #name#value=Torch
 #passable#solid=true#light=true
-#visual#chr=/#color=1
+#visual#chr=/#color-fg=white#color-bg=background

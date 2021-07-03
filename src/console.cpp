@@ -1,374 +1,265 @@
 ﻿#include "console.h"
 
-const std::wstring Console::CP437 = L" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$ % &\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
-Point2D Console::CursorPosition;
-std::string Console::_debug;
-int Console::_key;
+ConsoleCell::ConsoleCell(wchar_t chr, SDL_Color fg, SDL_Color bg, std::string font)
+{
+	Chr = chr;
+	FG = fg;
+	BG = bg;
+	Font = font;
+}
+
+ConsoleCell::~ConsoleCell() { }
+
+std::vector<ConsoleCell*> Console::_cells;
+double Console::_cursorTimer;
+bool Console::_cursorVisible;
+TextureFont* Console::_font;
+std::map<std::string, TextureFont*> Console::_fonts;
+std::vector<std::string> Console::_fontNames;
+std::map<std::string, SDL_Color> Console::_palette;
+SDL_Renderer* Console::_renderer;
+bool Console::_renderScanLines;
 Size2D Console::_size;
-WINDOW* Console::_window;
+Sprite* Console::_vignetteSprite;
+Point2D Console::CursorPosition;
+double Console::CursorSize;
 
 void Console::clear()
 {
-	wclear(_window);
+	clearLines(0, _size.Height);
 }
 
-void Console::clearLine(int y, int x)
+void Console::clearLine(int y)
 {
-	std::string v = "";
-	for (int i = x; i < _size.Width; i++) v += " ";
-
-	write(y, x, v);
-}
-
-void Console::clearLines(int height)
-{
-	for (int i = 0; i < height; i++)
-		clearLine(i);
+	for (int x = 0; x < _size.Width; x++)
+		write(L' ', { x, y }, _palette["white"], _palette["background"]);
 }
 
 void Console::clearLines(int y, int height)
 {
-	for (int i = y; i < y + height; i++)
-		clearLine(i);
+	for (int yy = y; yy < y + height; yy++)
+		clearLine(yy);
 }
 
-void Console::clearRect(Rect r)
+bool Console::contains(Point2D point)
 {
-	std::string v = "";
-	for (int i = r.Position.X; i < r.Position.X + r.Size.Width; i++) v += " ";
-
-	for (int y = r.Position.Y; y < r.Position.Y + r.Size.Height; y++)
-		write(y, r.Position.X, v);
-}
-
-void Console::debug(std::string v)
-{
-	_debug = v;
+	return point.X >= 0 && point.Y >= 0 && point.X < _size.Width && point.Y < _size.Height;
 }
 
 void Console::end()
 {
-	delwin(_window);
-	endwin();
+	delete _vignetteSprite;
 }
 
-void Console::fillRandomly()
+SDL_Color Console::getColor(std::string colorName)
 {
+	return _palette[colorName];
+}
+
+void Console::render()
+{
+	_vignetteSprite->setOpacity(0.8);
+	_vignetteSprite->render(_renderer, { windowSize().Width / 2, windowSize().Height / 2 });
+
+	auto firstFont = _fonts[_fontNames[0]];
+
 	for (int y = 0; y < _size.Height; y++)
 	{
 		for (int x = 0; x < _size.Width; x++)
 		{
-			auto c = CP437[rand() % 256];
-			write(y, x, c, rand() % 8);
+			auto cell = _cells[(y * _size.Width) + x];
+			auto cellFont = _fonts[cell->Font];
+
+			SDL_Point point = { x * firstFont->cellSize().Width + ((firstFont->cellSize().Width - cellFont->cellSize().Width) / 2), y * firstFont->cellSize().Height + ((firstFont->cellSize().Height - cellFont->cellSize().Height) / 2) };
+
+			if (cell->BG.a != 0)
+			{
+				SDL_Rect rect;
+				rect.x = point.x;
+				rect.y = point.y;
+				rect.w = firstFont->cellSize().Width;
+				rect.h = firstFont->cellSize().Height;
+
+				SDL_SetRenderDrawColor(_renderer, cell->BG.r, cell->BG.g, cell->BG.b, 255);
+				SDL_RenderFillRect(_renderer, &rect);
+			}
+
+			cellFont->write(cell->Chr, point, cell->FG);
+
+			if (_cursorVisible && CursorSize > 0.0 && CursorPosition.X == x && CursorPosition.Y == y)
+			{
+				int h = (int)(CursorSize * (double)firstFont->cellSize().Height);
+
+				SDL_Rect rect;
+				rect.x = point.x;
+				rect.y = point.y + firstFont->cellSize().Height - h;
+				rect.w = firstFont->cellSize().Width;
+				rect.h = h;
+
+				SDL_SetRenderDrawColor(_renderer, 255, 255, 255, 255);
+				SDL_RenderFillRect(_renderer, &rect);
+			}
 		}
 	}
+
+	if (!_renderScanLines) return;
+
+	SDL_SetRenderDrawColor(_renderer, 255, 255, 255, 5);
+	for(int y = 0; y < windowSize().Height; y += 5)
+		SDL_RenderDrawLine(_renderer, 0, y, windowSize().Width, y);
 }
 
-Direction2D Console::getDirection()
+void Console::resetCursorTimer()
 {
-	do
+	_cursorVisible = true;
+	_cursorTimer = 500.0;
+}
+
+void Console::setFont(std::string fontName)
+{
+	_font = _fonts[fontName];
+}
+
+void Console::setup(SDL_Renderer* renderer, std::vector<TextureFont*> fonts, Size2D size)
+{
+	_renderer = renderer;
+	_font = fonts[0];
+	_size = size;
+	_renderScanLines = true;
+	CursorSize = 0.2;
+
+	for (auto f : fonts)
 	{
-		getKey();
-		Direction2D dir = getDirection(_key);
+		_fonts[f->name()] = f;
+		_fontNames.push_back(f->name());
+	}
 
-		if (dir.isZero()) continue;
+	for (int i = 0; i < _size.Width * _size.Height; i++)
+		_cells.push_back(new ConsoleCell(L' ', { 255, 255, 255, 255 }, { 255, 255, 255, 0 }, _font->name()));
 
-		return dir;
-	} 
-	while (true);
-}
-
-Direction2D Console::getDirection(int key)
-{
-	Direction2D dir = { 0, 0 };
-
-	if (key == 104 || key == 260 || key == 52) dir.X = -1;
-	if (key == 108 || key == 261 || key == 54) dir.X = 1;
-	if (key == 107 || key == 259 || key == 56) dir.Y = -1;
-	if (key == 106 || key == 258 || key == 50) dir.Y = 1;
-	if (key == 121 || key == 55) { dir.X = -1; dir.Y = -1; }
-	if (key == 117 || key == 57) { dir.X = 1; dir.Y = -1; }
-	if (key == 98 || key == 49) { dir.X = -1; dir.Y = 1; }
-	if (key == 110 || key == 51) { dir.X = 1; dir.Y = 1; }
-
-	return dir;
-}
-
-int Console::getKey()
-{
-	noecho();
-	nodelay(stdscr, FALSE);
-
-	do
+	for (auto const &l : Data::getPalette())
 	{
-		if ((_key = wgetch(_window)) == ERR) continue;
+		auto parts = Strings::split(l, ':');
+		auto colorName = parts[0];
+		parts = Strings::split(parts[1], ',');
+		SDL_Color color = { std::stoi(parts[0]), std::stoi(parts[1]), std::stoi(parts[2]), std::stoi(parts[3]) };
+		_palette[colorName] = color;
+	}
 
-		return _key;
-	} while (true);
-}
-
-const char Console::getLetter(bool lowercase, bool uppercase)
-{
-	if (!lowercase && !uppercase) return -1;
-
-	do
-	{
-		getKey();
-
-		if ((uppercase && (_key < 65 || _key > 90)) || (lowercase && (_key < 97 || _key > 122)))
-			continue;
-
-		return _key;
-	} while (true);
-}
-
-int Console::getNumber()
-{
-	int cy = getcury(_window);
-	int cx = getcurx(_window);
-
-	do
-	{
-		auto str = getString();
-
-		if (!(!str.empty() && std::all_of(str.begin(), str.end(), ::isdigit)))
-		{
-			std::string clr = "";
-			for (int i = 0; i < str.length(); i++) clr += " ";
-			write(cy, cx, clr);
-			wmove(_window, cy, cx);
-
-			continue;
-		}
-
-		return stoi(str);
-	} while (true);
-}
-
-int Console::getNumberSingle()
-{
-	do
-	{
-		getKey();
-
-		if (_key < 48 || _key > 57) continue;
-
-		return _key;
-	} while (true);
-}
-
-std::string Console::getString()
-{
-	echo();
-	nodelay(stdscr, FALSE);
-
-	std::string val = "";
-
-	do
-	{
-		char buf[] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-		auto res = &buf[0];
-		if ((wgetstr(_window, res)) == ERR)
-			continue;
-
-		val = res;
-		auto len = val.length();
-		if (len == 0 || len > 100) continue;
-
-		noecho();
-		nodelay(stdscr, TRUE);
-
-		return val;
-	} while (true);
-}
-
-bool Console::getYesNo()
-{
-	do
-	{
-		getKey();
-
-		if (_key != 121 && _key != 110) continue;
-
-		return _key == 121;
-	} while (true);
-}
-
-void Console::refresh()
-{
-	if (_debug.length() > 0) write(0, 0, "DEBUG: " + _debug);
-
-	wmove(_window, CursorPosition.Y, CursorPosition.X);
-	wrefresh(_window);
-}
-
-void Console::refreshKeyERR()
-{
-	while ((_key = getch()) == ERR) Console::refresh();
-}
-
-void Console::setCursor(int i)
-{
-	curs_set(i);
-}
-
-void Console::setup(int h, int w)
-{
-	_COORD coord;
-	coord.X = w;
-	coord.Y = h;
-
-	_SMALL_RECT rect;
-	rect.Top = 0;
-	rect.Left = 0;
-	rect.Bottom = h - 1;
-	rect.Right = w - 1;
-
-	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleScreenBufferSize(handle, coord);
-	SetConsoleWindowInfo(handle, TRUE, &rect);
-
-	srand(time(NULL));
-
-	initscr();
-	cbreak();
-	noecho();
-	nodelay(stdscr, TRUE);
-	keypad(stdscr, TRUE);
-
-	start_color();
-
-	init_color(COLOR_WHITE, 999, 999, 999);
-	init_color(COLOR_RED, 999, 50, 50);
-	init_color(COLOR_GREEN, 50, 999, 50);
-	init_color(COLOR_BLUE, 50, 50, 999);
-	init_color(COLOR_YELLOW, 999, 999, 50);
-	init_color(COLOR_MAGENTA, 999, 50, 999);
-	init_color(COLOR_CYAN, 50, 999, 999);
-	init_color(COLOR_GRAY, 500, 500, 500);
-
-	init_pair(1, COLOR_WHITE, COLOR_BLACK);
-	init_pair(2, COLOR_RED, COLOR_BLACK);
-	init_pair(3, COLOR_GREEN, COLOR_BLACK);
-	init_pair(4, COLOR_BLUE, COLOR_BLACK);
-	init_pair(5, COLOR_YELLOW, COLOR_BLACK);
-	init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
-	init_pair(7, COLOR_CYAN, COLOR_BLACK);
-	init_pair(8, COLOR_GRAY, COLOR_BLACK);
-
-	setCursor(0);
-
-	_window = newwin(h, w, 0, 0);
-	_size = { w, h };
-	_key = -1;
-	_debug = "";
-	CursorPosition = { 0, 0 };
+	_vignetteSprite = new Sprite(_renderer, "assets/vignette-0.png");
 }
 
 Size2D Console::size() { return _size; }
 
-void Console::wait(int ms)
+Size2D Console::windowSize()
 {
-	auto dur = std::chrono::milliseconds(ms);
-	std::this_thread::sleep_for(dur);
+	return { _size.Width * _font->cellSize().Width, _size.Height * _font->cellSize().Height };
 }
 
-bool Console::windowsSetFont(const wchar_t* fn)
+void Console::write(wchar_t chr, Point2D point)
 {
-	CONSOLE_FONT_INFOEX cfi;
-	cfi.cbSize = sizeof cfi;
-	cfi.nFont = 0;
-	cfi.dwFontSize.X = 0;
-	cfi.dwFontSize.Y = 20;
-	cfi.FontFamily = FF_MODERN;
-	cfi.FontWeight = FW_NORMAL;
-	
-	wcscpy_s(cfi.FaceName, fn);
-	return SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
+	if (!contains(point)) return;
+
+	auto cell = _cells[(point.Y * _size.Width) + point.X];
+	cell->Chr = chr;
+	cell->Font = _font->name();
 }
 
-void Console::write(int y, int x, const char chr)
+void Console::write(wchar_t chr, Point2D point, SDL_Color fg)
 {
-	mvwaddch(_window, y, x, chr);
+	if (!contains(point)) return;
+
+	auto cell = _cells[(point.Y * _size.Width) + point.X];
+	cell->Chr = chr;
+	cell->FG = fg;
+	cell->Font = _font->name();
 }
 
-void Console::write(int y, int x, const char chr, int cp)
+void Console::write(wchar_t chr, Point2D point, SDL_Color fg, SDL_Color bg)
 {
-	wattron(_window, COLOR_PAIR(cp));
-	mvwaddch(_window, y, x, chr);
-	wattroff(_window, COLOR_PAIR(cp));
+	if (!contains(point)) return;
+
+	auto cell = _cells[(point.Y * _size.Width) + point.X];
+	cell->Chr = chr;
+	cell->FG = fg;
+	cell->BG = bg;
+	cell->Font = _font->name();
 }
 
-void Console::write(int y, int x, const chtype ct)
-{
-	mvwaddch(_window, y, x, ct);
-}
-
-void Console::write(int y, int x, const chtype ct, int cp)
-{
-	wattron(_window, COLOR_PAIR(cp));
-	mvwaddch(_window, y, x, ct);
-	wattroff(_window, COLOR_PAIR(cp));
-}
-
-void Console::write(int y, int x, const char* str)
-{
-	mvwaddstr(_window, y, x, str);
-}
-
-void Console::write(int y, int x, const char* str, int cp)
-{
-	wattron(_window, COLOR_PAIR(cp));
-	mvwaddstr(_window, y, x, str);
-	wattroff(_window, COLOR_PAIR(cp));
-}
-
-void Console::write(int y, int x, std::string str)
-{
-	mvwaddstr(_window, y, x, str.c_str());
-}
-
-void Console::write(int y, int x, std::string str, int cp)
-{
-	wattron(_window, COLOR_PAIR(cp));
-	mvwaddstr(_window, y, x, str.c_str());
-	wattroff(_window, COLOR_PAIR(cp));
-}
-
-void Console::write(int y, int x, const wchar_t chr)
-{
-	wmove(_window, y, x);
-	waddrawch(_window, chr);
-}
-
-void Console::write(int y, int x, const wchar_t chr, int cp)
-{
-	wmove(_window, y, x);
-	wattron(_window, COLOR_PAIR(cp));
-	waddrawch(_window, chr);
-	wattroff(_window, COLOR_PAIR(cp));
-}
-
-void Console::write(int y, int x, const wchar_t* str)
-{
-	for (int i = 0; i < wcslen(str); i++)
-		write(y, x + i, str[i]);
-}
-
-void Console::write(int y, int x, const wchar_t* str, int cp)
-{
-	for (int i = 0; i < wcslen(str); i++)
-		write(y, x + i, str[i], cp);
-}
-
-void Console::write(int y, int x, std::wstring str)
+void Console::write(std::wstring str, Point2D point)
 {
 	for (int i = 0; i < str.length(); i++)
-		write(y, x + i, str[i]);
+	{
+		write(str[i], point);
+		point.X++;
+	}
 }
 
-void Console::write(int y, int x, std::wstring str, int cp)
+void Console::write(std::wstring str, Point2D point, int width)
+{
+	auto pointX = point.X;
+	auto lineLength = 0;
+
+	for (int i = 0; i < str.length(); i++)
+	{
+		if (str[i] == L' ' || str[i] == L'.' || str[i] == L',' || str[i] == L'!' || str[i] == L':' || str[i] == ';')
+		{
+			auto length = 0;
+			for (int j = i + 1; j < str.length(); j++)
+			{
+				if (str[j] == L' ' || str[j] == L'.' || str[j] == L',' || str[j] == L'!' || str[j] == L':' || str[j] == ';')
+					break;
+
+				length++;
+			}
+
+			if (length + lineLength > width)
+			{
+				point.X = pointX;
+				point.Y++;
+				lineLength = 0;
+				continue;
+			}
+		}
+
+		write(str[i], point);
+
+		point.X++;
+		lineLength++;
+
+		if (lineLength > width)
+		{
+			point.X = pointX;
+			point.Y++;
+			lineLength = 0;
+		}
+	}
+}
+
+void Console::write(std::wstring str, Point2D point, SDL_Color fg)
 {
 	for (int i = 0; i < str.length(); i++)
-		write(y, x + i, str[i], cp);
+	{
+		write(str[i], point, fg);
+		point.X++;
+	}
+}
+
+void Console::write(std::wstring str, Point2D point, SDL_Color fg, SDL_Color bg)
+{
+	for (int i = 0; i < str.length(); i++)
+	{
+		write(str[i], point, fg, bg);
+		point.X++;
+	}
+}
+
+void Console::update(double delta)
+{
+	_cursorTimer -= delta;
+	if (_cursorTimer <= 0.0)
+	{
+		_cursorVisible = (_cursorVisible) ? false : true;
+		_cursorTimer = 500.0;
+	}
 }

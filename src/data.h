@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <fstream>
 #include <io.h>
+#include <iostream>
 #include <sstream>
 #include <stdio.h>
 #include <string>
@@ -21,6 +22,7 @@ class Data
 	public:
 		static std::vector<std::wstring> getObject(std::wstring);
 		static std::vector<std::wstring> getObjectList(std::wstring);
+		static std::vector<std::string> getPalette();
 		static void load();
 };
 

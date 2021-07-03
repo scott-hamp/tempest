@@ -86,12 +86,14 @@ void Map::draw()
 			Point2D point = { x, y };
 			auto tile = _tiles[(y * _size.Width) + x];
 			auto chr = L' ';
-			auto colorPair = 1;
+			SDL_Color fg = Console::getColor("white");
+			SDL_Color bg = Console::getColor("background");
 
 			if (_depth == 0)
 			{
 				chr = tile->getChr();
-				colorPair = tile->getColorPair();
+				fg = Console::getColor(tile->getColorFG());
+				bg = Console::getColor(tile->getColorBG());
 			}
 			else
 			{
@@ -103,11 +105,11 @@ void Map::draw()
 					if (chr == L'.') chr = L' ';
 				}
 
-				colorPair = (view->State == 2) ? colorPair = tile->getColorPair() : 8;
+				fg = (view->State == 2) ? Console::getColor(tile->getColorFG()) : Console::getColor("background");
 			}
 
 			auto consolePoint = Point2D::add(_drawOffset, point);
-			Console::write(consolePoint.Y, consolePoint.X, chr, colorPair);
+			Console::write(chr, { consolePoint.X, consolePoint.Y }, fg, bg);
 		}
 	}
 }

@@ -46,17 +46,36 @@ std::vector<std::wstring> Data::getObjectList(std::wstring listName)
     return empty;
 }
 
+std::vector<std::string> Data::getPalette()
+{
+    std::vector<std::string> lines;
+    std::string line;
+
+    std::ifstream paletteFile("data/palette.txt");
+    if (paletteFile.is_open())
+    {
+        while (getline(paletteFile, line))
+            lines.push_back(line);
+
+        paletteFile.close();
+    }
+
+    return lines;
+}
+
 void Data::load()
 {
     std::locale::global(std::locale("en_US.utf8"));
     std::wifstream wf("data/map-objects.txt");
     std::wstring wstr;
 
+    /*
     #ifdef _WIN32
         _setmode(_fileno(stdout), _O_WTEXT);
     #else
         std::setlocale(LC_ALL, "");
     #endif 
+    */
 
     for (wchar_t c; wf.get(c); )
     {

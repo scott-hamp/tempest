@@ -28,14 +28,22 @@ wchar_t MapTile::getChr()
 	return L' ';
 }
 
-int MapTile::getColorPair()
+std::string MapTile::getColorBG()
 {
 	if (_objects.size() > 0)
-		return stoi(object()->getBehaviorProperty(L"visual", L"color"));
+		return Strings::from(object()->getBehaviorProperty(L"visual", L"color-bg"));
 
-	if (_terrain == MapTileTerrain_Grass) return 3;
+	return "background";
+}
 
-	return 0;
+std::string MapTile::getColorFG()
+{
+	if (_objects.size() > 0)
+		return Strings::from(object()->getBehaviorProperty(L"visual", L"color-fg"));
+
+	if (_terrain == MapTileTerrain_Grass) return "bright-green";
+
+	return "bright-grey";
 }
 
 std::string MapTile::getDescription(bool longDescription)
