@@ -2,7 +2,7 @@
 
 player
 #ac#value=3#default-value=3
-#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=hit#verb-default=hit
+#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=hit#verb-default=hit#sound=hit-small#sound-default=hit-small
 #attributes#value=5,5,5,5,5,5#default-value=5,5,5,5,5,5
 #description#short=Yourself.#long=It's you.
 #hp#value=10
@@ -11,7 +11,7 @@ player
 #has-inventory#starting=wooden_torch
 #passable#solid=false#light=true
 #view#distance=8#power=4#power-default=4
-#visual#chr=@#color-fg=bright-green#color-bg=background
+#visual#chr=@#color-fg=white#color-bg=background
 
 stairs_down
 #description#short=Downwards stairs.#long=Stairs leading downwards.
@@ -34,13 +34,16 @@ tree
 
 wild_dog
 #ac#value=3#default-value=3
-#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=bites#verb-default=bites
+#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=bites#verb-default=bites#sound=bite#sound-default=bite
 #description#short=A wild dog.#long=A vicious wild dog driven mad with hunger.
+#hostile
 #hp#value=4
 #name#value=Wild Dog
 #passable#solid=false#light=true
 #spawn#depth=1-5
+#view#distance=10#power=15#power-default=15
 #visual#chr=c#color-fg=dark-red#color-bg=background
+#wander
 
 wooden_torch
 #description#short=A wooden torch.#long=It's a simple torch.

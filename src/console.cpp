@@ -72,19 +72,48 @@ void Console::render()
 
 			SDL_Point point = { x * firstFont->cellSize().Width + ((firstFont->cellSize().Width - cellFont->cellSize().Width) / 2), y * firstFont->cellSize().Height + ((firstFont->cellSize().Height - cellFont->cellSize().Height) / 2) };
 
+			SDL_Rect rect;
+			rect.x = point.x;
+			rect.y = point.y;
+			rect.w = firstFont->cellSize().Width;
+			rect.h = firstFont->cellSize().Height;
+
 			if (cell->BG.a != 0)
 			{
-				SDL_Rect rect;
-				rect.x = point.x;
-				rect.y = point.y;
-				rect.w = firstFont->cellSize().Width;
-				rect.h = firstFont->cellSize().Height;
-
 				SDL_SetRenderDrawColor(_renderer, cell->BG.r, cell->BG.g, cell->BG.b, 255);
 				SDL_RenderFillRect(_renderer, &rect);
 			}
 
-			cellFont->write(cell->Chr, point, cell->FG);
+			if (cell->Chr == L'▓' || cell->Chr == L'▒' || cell->Chr == L'░')
+			{
+				SDL_SetRenderDrawColor(_renderer, cell->FG.r, cell->FG.g, cell->FG.b, 255);
+
+				if (cell->Chr == L'░')
+				{
+					for (int x = 0; x < rect.w; x += 3)
+					{
+						for (int y = 0; y < rect.h; y += 3)
+							SDL_RenderDrawPoint(_renderer, rect.x + x, rect.y + y);
+					}
+				}
+				else
+				{
+					for (int y = 0; y < rect.h / 2; y += 2)
+						SDL_RenderDrawLine(_renderer, rect.x, rect.y + y, rect.x + rect.w, rect.y + y);
+					for (int x = 0; x < rect.w; x += 2)
+						SDL_RenderDrawLine(_renderer, rect.x + x, rect.y, rect.x + x, rect.y + (rect.h / 2));
+
+					auto sp = 2;
+					if (cell->Chr == L'▒') sp = 5;
+
+					for (int y = rect.h / 2; y < rect.h; y += sp)
+						SDL_RenderDrawLine(_renderer, rect.x, rect.y + y, rect.x + rect.w, rect.y + y);
+					for (int x = 0; x < rect.w; x += sp)
+						SDL_RenderDrawLine(_renderer, rect.x + x, rect.y + (rect.h / 2), rect.x + x, rect.y + (rect.h / 2) + (rect.h / 2));
+				}
+			}
+			else
+				cellFont->write(cell->Chr, point, cell->FG);
 
 			if (_cursorVisible && CursorSize > 0.0 && CursorPosition.X == x && CursorPosition.Y == y)
 			{
@@ -146,7 +175,7 @@ void Console::setup(SDL_Renderer* renderer, std::vector<TextureFont*> fonts, Siz
 		_palette[colorName] = color;
 	}
 
-	_vignetteSprite = new Sprite(_renderer, "assets/vignette-0.png");
+	_vignetteSprite = new Sprite(_renderer, "assets/sprites/vignette-0.png");
 }
 
 Size2D Console::size() { return _size; }

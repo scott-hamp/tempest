@@ -1,8 +1,10 @@
 ﻿#include <conio.h>
 #include <iostream>
 #include <SDL.h>
+#include <SDL_mixer.h>
 #include <stdlib.h>
 #include <windows.h>
+#include "audio.h"
 #include "console.h"
 #include "input.h"
 #include "map.h"
@@ -19,6 +21,8 @@ int main(int argc, char* argv[])
 	{
 		SDL_Init(SDL_INIT_EVERYTHING);
 		TTF_Init();
+		Mix_Init(MIX_INIT_MP3 | MIX_INIT_OGG);
+		Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 1024);
 
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
@@ -59,35 +63,60 @@ int main(int argc, char* argv[])
 		SDL_SetRenderDrawBlendMode(_renderer, SDL_BLENDMODE_BLEND);
 		SDL_SetRenderDrawColor(_renderer, 15, 25, 45, 255);
 
+		printf("Loading data...\n");
+
+		Data::load();
+
+		printf("Loading audio...\n");
+
+		Audio::load();
+
 		printf("Creating fonts...\n");
 
-		auto consoleFont1 = new TTFTextureFont
-			("inconsolata",
-			_renderer,
-			"assets/inconsolata-sb.ttf",
-			26);
+		std::vector<TextureFont*> consoleFonts;
+		for (auto const& l : Data::getFonts())
+		{
+			auto parts = Strings::split(l, ':');
+			auto fontName = parts[0];
+			parts = Strings::split(parts[1], ',');
 
-		/*
-		auto consoleFont2 = new CP437TextureFont
-			("tiles",
-			_renderer,
-			"assets/tiles-16x24.png",
-			{ 16, 24 },
-			1.0);
-		*/
+			TextureFont* font = nullptr;
+
+			if (parts[0].compare("ttf") == 0)
+			{
+				font = new TTFTextureFont
+					(fontName.c_str(),
+					_renderer,
+					parts[1].c_str(),
+					stoi(parts[2]));
+			}
+			else
+			{
+				font = new CP437TextureFont
+					(fontName.c_str(),
+					_renderer,
+					parts[1].c_str(),
+					{ stoi(parts[2]), stoi(parts[3]) }, 
+					stod(parts[4]));
+			}
+
+			consoleFonts.push_back(font);
+
+			printf(("   + '" + fontName + "' (" + parts[0] + ", " + parts[1] + ")\n").c_str());
+		}
 
 		printf("Creating console...\n");
 
 		Console::setup
 			(_renderer, 
-			{ consoleFont1 }, 
-			{ 80, 24 });
+			consoleFonts,
+			{ 100, 24 });
 
 		SDL_SetWindowSize(_window, Console::windowSize().Width, Console::windowSize().Height);
+		SDL_SetWindowPosition(_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
-		printf("Loading data...\n");
+		printf("Setting up...\n");
 
-		Data::load();
 		Random::setSeed();
 		UI::setup();
 
@@ -118,8 +147,11 @@ int main(int argc, char* argv[])
 
 				if (e.type == SDL_KEYDOWN)
 				{
-					UI::nextTurn();
-					Input::handle(e.key.keysym.sym);
+					if (!Map::isAnimating())
+					{
+						UI::nextTurn();
+						Input::handle(e.key.keysym.sym);
+					}
 				}
 			}
 
@@ -132,8 +164,11 @@ int main(int argc, char* argv[])
 				frame++;
 
 				Console::update(delta);
+				Map::animate(delta);
 
-				SDL_SetRenderDrawColor(_renderer, 15, 25, 45, 255);
+				auto colorBG = Console::getColor("background");
+
+				SDL_SetRenderDrawColor(_renderer, colorBG.r, colorBG.g, colorBG.b, 255);
 				SDL_RenderClear(_renderer);
 
 				Console::clear();
@@ -150,6 +185,10 @@ int main(int argc, char* argv[])
 		}
 
 		Console::end();
+
+		TTF_Quit();
+		Mix_Quit();
+		
 		SDL_DestroyRenderer(_renderer);
 		SDL_DestroyWindow(_window);
 	}

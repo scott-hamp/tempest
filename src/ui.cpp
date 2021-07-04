@@ -15,6 +15,8 @@ std::vector<UIPanel> UI::_panelsVisible;
 
 void UI::draw()
 {
+	Console::setFont("text");
+
 	if (panelIsVisible(UIPanel_Equipment))
 	{
 		auto slots = Map::player()->getEquipmentSlots();

@@ -22,7 +22,7 @@ void Input::handle(SDL_Keycode key)
 {
 	handleKey(key);
 
-	if (!Map::player()->turnActionRemaining()) Map::nextTurn();
+	if (!Map::player()->turnActionsRemaining()) Map::nextTurn();
 }
 
 void Input::handleKey(SDL_Keycode key)
@@ -64,7 +64,7 @@ void Input::handleKey(SDL_Keycode key)
 			auto consoleTo = Point2D::add(Console::CursorPosition, direction);
 			auto to = Map::positionFromConsolePosition(consoleTo);
 			
-			if (Map::contains(to))
+			if (Map::contains(to) && Map::player()->getView(to, Map::size().Width)->State == 2)
 			{
 				at = to;
 				Console::CursorPosition = consoleTo;
@@ -153,6 +153,14 @@ void Input::handleKey(SDL_Keycode key)
 	{
 		Console::CursorSize = 0.0;
 		UI::setPanelVisible(UIPanel_Inventory, true);
+
+		return;
+	}
+
+	// Wait - '.' / numpad 5
+	if (key == SDLK_PERIOD || key == SDLK_KP_5)
+	{
+		Map::player()->takeTurnAction();
 
 		return;
 	}

@@ -1,0 +1,2 @@
+text:ttf,assets/fonts/inconsolata-sb.ttf,30
+tiles:cp437,assets/fonts/tiles-16x24.png,16,24,1.0

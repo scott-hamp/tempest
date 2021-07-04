@@ -78,6 +78,7 @@ class MapObject
 		void nextTurn();
 		Point2D position();
 		void removeFromInventory(MapObject*);
+		void resetTurnActions();
 		void setPosition(Point2D);
 		void setBehaviorProperty(std::wstring, std::wstring, std::wstring);
 		void setView(Point2D, int, int);
@@ -86,7 +87,7 @@ class MapObject
 		void takeTurnAction();
 		void tryInteraction(MapObjectInteraction);
 		void tryInteraction(MapObjectInteraction, MapObject*);
-		bool turnActionRemaining();
+		bool turnActionsRemaining();
 		void updateEquipmentEffects();
 };
 

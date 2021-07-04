@@ -4,6 +4,7 @@
 #define Map_H
 
 #include <vector>
+#include "audio.h"
 #include "console.h"
 #include "data.h"
 #include "dice.h"
@@ -14,9 +15,21 @@
 
 class Path;
 
+class MapAnimation
+{
+	public:
+		MapAnimation(Point2D, wchar_t, std::string, std::string, double);
+		wchar_t Chr;
+		std::string ColorBG;
+		std::string ColorFG;
+		Point2D Position;
+		double Timer;
+};
+
 class Map
 {
 	private:
+		static std::vector<MapAnimation*> _animations;
 		static int _depth;
 		static Point2D _drawOffset;
 		static std::vector<MapObject*> _objects;
@@ -24,6 +37,8 @@ class Map
 		static Size2D _size;
 		static std::vector<MapTile*> _tiles;
 	public:
+		static void addAnimation(MapAnimation*);
+		static void animate(double);
 		static void changeDepth(int);
 		static bool contains(Point2D);
 		static MapObject* createObject(std::wstring);
@@ -36,6 +51,9 @@ class Map
 		static int getTileLight(Point2D);
 		static MapObject* getTileObject(Point2D, int = 0);
 		static bool getTilePassable(Point2D, PassableType);
+		static MapTileTerrain getTileTerrain(Point2D);
+		static MapTileType getTileType(Point2D);
+		static bool isAnimating(bool = true);
 		static void moveObject(MapObject*, Point2D);
 		static void nextTurn();
 		static void objectTryInteraction(MapObject*, MapObjectInteraction);
@@ -48,6 +66,8 @@ class Map
 		static void setTile(Point2D, MapTileTerrain);
 		static void setTile(Point2D, int);
 		static void setup(Size2D, Point2D);
+		static Size2D size();
+		static void updateObject(MapObject*);
 		static void updateObjectView(MapObject*);
 };
 
@@ -64,7 +84,7 @@ class Path
 		bool contains(Point2D);
 		Point2D get(int);
 		bool isComplete();
-		int size();
+		int length();
 };
 
 #endif

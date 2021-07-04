@@ -1,11 +1,35 @@
-#include "map.h"
+﻿#include "map.h"
 
+MapAnimation::MapAnimation(Point2D position, wchar_t chr, std::string fg, std::string bg, double time)
+{
+	Position = position;
+	Chr = chr;
+	ColorFG = fg;
+	ColorBG = bg;
+	Timer = time;
+}
+
+std::vector<MapAnimation*> Map::_animations;
 int Map::_depth;
 Point2D Map::_drawOffset;
 std::vector<MapObject*> Map::_objects;
 MapObject* Map::_player;
 Size2D Map::_size;
 std::vector<MapTile*> Map::_tiles;
+
+void Map::addAnimation(MapAnimation* animation)
+{
+	_animations.push_back(animation);
+}
+
+void Map::animate(double delta)
+{
+	if (_animations.size() == 0) return;
+
+	_animations[0]->Timer -= delta;
+	if (_animations[0]->Timer <= 0.0) 
+		_animations.erase(_animations.begin());
+}
 
 bool Map::contains(Point2D point)
 {
@@ -79,6 +103,8 @@ MapObject* Map::createObject(std::wstring id)
 
 void Map::draw()
 {
+	Console::setFont("tiles");
+
 	for (int x = 0; x < _size.Width; x++)
 	{
 		for (int y = 0; y < _size.Height; y++)
@@ -89,29 +115,35 @@ void Map::draw()
 			SDL_Color fg = Console::getColor("white");
 			SDL_Color bg = Console::getColor("background");
 
-			if (_depth == 0)
-			{
-				chr = tile->getChr();
-				fg = Console::getColor(tile->getColorFG());
-				bg = Console::getColor(tile->getColorBG());
-			}
-			else
-			{
-				auto view = _player->getView(point, _size.Width);
-				chr = view->Chr;
-				if (view->State == 1)
-				{
-					if (chr == L'@') chr = tile->getChr();
-					if (chr == L'.') chr = L' ';
-				}
+			auto view = _player->getView(point, _size.Width);
+			chr = view->Chr;
+			fg = (view->State == 2) ? Console::getColor(tile->getColorFG()) : Console::getColor("background");
+			bg = (view->State == 2) ? Console::getColor(tile->getColorBG()) : Console::getColor("background");
 
-				fg = (view->State == 2) ? Console::getColor(tile->getColorFG()) : Console::getColor("background");
+			if (view->State == 1)
+			{
+				fg = Console::getColor("dark-grey");
+				if (chr == L'@') chr = tile->getChr();
+				if (chr == L'.') chr = L' ';
+				if (tile->type() == MapTileType_Wall) bg = { 0, 0, 0, 0 };
+			}
+
+			if (tile->type() == MapTileType_Wall)
+			{
+				if (y < _size.Height - 1)
+				{
+					if (getTileType({ x, y + 1 }) == MapTileType_Floor)
+						chr = L'▒';
+				}
 			}
 
 			auto consolePoint = Point2D::add(_drawOffset, point);
 			Console::write(chr, { consolePoint.X, consolePoint.Y }, fg, bg);
 		}
 	}
+
+	if(_animations.size() > 0)
+		Console::write(_animations[0]->Chr, { _animations[0]->Position.X + _drawOffset.X, _animations[0]->Position.Y + _drawOffset.Y }, Console::getColor(_animations[0]->ColorFG), Console::getColor(_animations[0]->ColorBG));
 }
 
 void Map::generate()
@@ -130,7 +162,7 @@ void Map::generate()
 			}
 		}
 
-		std::vector<Rect> rects;
+		std::vector<Rect> villageBuildings;
 
 		for (int i = 0; i < 5; i++)
 		{
@@ -138,13 +170,13 @@ void Map::generate()
 
 			while (true)
 			{
-				rect.Position = { 3 + Random::nextInt(0, _size.Width - 10), 1 + Random::nextInt(0, _size.Height - 8) };
-				rect.Size = { 3 + Random::nextInt(0, 7), 3 + Random::nextInt(0, 5) };
+				rect.Position = { 3 + Random::nextInt(0, _size.Width - 14), 1 + Random::nextInt(0, _size.Height - 11) };
+				rect.Size = { 5 + Random::nextInt(0, 7), 5 + Random::nextInt(0, 5) };
 
-				if (rects.size() == 0) break;
+				if (villageBuildings.size() == 0) break;
 
 				bool overlaps = false;
-				for (const auto& r : rects)
+				for (const auto& r : villageBuildings)
 				{
 					if (!rect.overlaps(r, 1)) continue;
 
@@ -157,10 +189,10 @@ void Map::generate()
 				break;
 			}
 
-			rects.push_back(rect);
+			villageBuildings.push_back(rect);
 		}
 
-		for (const auto& r : rects)
+		for (const auto& r : villageBuildings)
 		{
 			for (int x = 0; x < r.Size.Width; x++)
 			{
@@ -170,7 +202,16 @@ void Map::generate()
 
 					if (!contains(point)) continue;
 
-					setTile(point, MapTileType_Wall);
+					if(x > 0 && x < r.Size.Width - 1 && y > 0 && y < r.Size.Height - 1)
+						setTile(point, MapTileType_Floor);
+					else
+					{
+						if(x == (r.Size.Width / 2) && y == r.Size.Height - 1)
+							setTile(point, MapTileType_Floor);
+						else
+							setTile(point, MapTileType_Wall);
+					}
+
 					setTile(point, MapTileTerrain_Stone);
 				}
 			}
@@ -190,6 +231,17 @@ void Map::generate()
 				if (!getTilePassable(point, PassableType_Solid))
 					continue;
 
+				bool contains = false;
+				for (auto r : villageBuildings)
+				{
+					if (!r.contains(point)) continue;
+
+					contains = true;
+					break;
+				}
+
+				if (contains) continue;
+
 				break;
 			}
 
@@ -198,7 +250,7 @@ void Map::generate()
 	}
 	else
 	{
-		// In the caves
+		// In the dungeon
 
 		for (int x = 0; x < _size.Width; x++)
 		{
@@ -395,6 +447,16 @@ void Map::generate()
 
 		break;
 	}
+
+	if (_depth == 0) 
+		Audio::switchMusic("village");
+	else
+		Audio::switchMusic("dungeon");
+}
+
+bool Map::isAnimating(bool interruptingOnly)
+{
+	return _animations.size() > 0;
 }
 
 Path* Map::findPath(Point2D from, Point2D to)
@@ -536,6 +598,20 @@ bool Map::getTilePassable(Point2D point, PassableType passableType)
 	return _tiles[(point.Y * _size.Width) + point.X]->isPassable(passableType);
 }
 
+MapTileTerrain Map::getTileTerrain(Point2D point)
+{
+	if (!contains(point)) return MapTileTerrain_Stone;
+
+	return _tiles[(point.Y * _size.Width) + point.X]->terrain();
+}
+
+MapTileType Map::getTileType(Point2D point)
+{
+	if (!contains(point)) return MapTileType_Empty;
+
+	return _tiles[(point.Y * _size.Width) + point.X]->type();
+}
+
 void Map::moveObject(MapObject* object, Point2D to)
 {
 	if (std::find(_objects.begin(), _objects.end(), object) == _objects.end())
@@ -548,10 +624,19 @@ void Map::moveObject(MapObject* object, Point2D to)
 
 void Map::nextTurn()
 {
-	// ...
+	for (auto const& obj : _objects)
+	{
+		if (obj == _player) continue;
+
+		obj->nextTurn();
+		updateObjectView(obj);
+		obj->resetTurnActions();
+
+		while(obj->turnActionsRemaining()) updateObject(obj);
+	}
 
 	_player->nextTurn();
-	if(_depth > 0) updateObjectView(_player);
+	updateObjectView(_player);
 }
 
 void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interaction)
@@ -644,6 +729,8 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 			if (other == _player)
 				UI::log("The " + otherName + " misses you.");
 
+			addAnimation(new MapAnimation(other->position(), L'/', "white", "background", 80));
+
 			delete toHitRoll;
 			return;
 		}
@@ -656,7 +743,9 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 		if (object == _player)
 			UI::log("You " + Strings::from(object->getBehaviorProperty(L"attack", L"verb")) + " the " + otherName + ".");
 		if (other == _player)
-			UI::log("The " + otherName + " " + Strings::from(other->getBehaviorProperty(L"attack", L"verb")) + " you.");
+			UI::log("The " + objectName + " " + Strings::from(object->getBehaviorProperty(L"attack", L"verb")) + " you.");
+
+		auto animationChr = L'X';
 
 		if (stoi(other->getBehaviorProperty(L"hp", L"value")) <= 0)
 		{
@@ -664,8 +753,15 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 			{
 				removeObject(other);
 				UI::log("You kill the " + otherName + "!");
+				animationChr = L'♥';
 			}
 		}
+
+		addAnimation(new MapAnimation(other->position(), animationChr, "bright-red", "background", 80));
+
+		auto attackSoundName = object->getBehaviorProperty(L"attack", L"sound");
+		if(attackSoundName.compare(L"none") != 0) 
+			Audio::playSound(Strings::from(attackSoundName));
 
 		delete toHitRoll; delete damageRoll;
 
@@ -782,8 +878,48 @@ void Map::setup(Size2D size, Point2D drawOffset)
 	_player = nullptr;
 }
 
+Size2D Map::size() { return _size; }
+
+void Map::updateObject(MapObject* object)
+{
+	if (object == _player) return;
+
+	object->takeTurnAction();
+
+	if (object->hasBehavior(L"hostile"))
+	{
+		if (object->getView(_player->position(), _size.Width)->State == 2)
+		{
+			auto path = findPath(object->position(), _player->position());
+
+			if (!path->isComplete()) return;
+			if (path->length() < 2) return;
+
+			auto direction = object->position().towards(path->get(1));
+			objectTryInteraction(object, MapObjectInteraction_Move, direction);
+		}
+	}
+
+	if (object->hasBehavior(L"wander"))
+	{
+		if (Random::next() >= 0.5)
+		{
+			Direction2D direction = { Random::nextInt(-1, 2), Random::nextInt(-1, 2) };
+			auto to = Point2D::add(object->position(), direction);
+
+			if (!getTilePassable(to, PassableType_Solid)) return;
+
+			objectTryInteraction(object, MapObjectInteraction_Move, direction);
+
+			return;
+		}
+	}
+}
+
 void Map::updateObjectView(MapObject* object)
 {
+	if (!object->hasBehavior(L"view")) return;
+
 	for (int x = 0; x < _size.Width; x++)
 	{
 		for (int y = 0; y < _size.Height; y++)
@@ -818,7 +954,6 @@ void Map::updateObjectView(MapObject* object)
 	}
 }
 
-
 Path::Path() { _isComplete = false; }
 
 Path::~Path() { }
@@ -841,4 +976,4 @@ Point2D Path::get(int i) { return _nodes[i]; }
 
 bool Path::isComplete() { return _isComplete; }
 
-int Path::size() { return _nodes.size(); }
+int Path::length() { return _nodes.size(); }

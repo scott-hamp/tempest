@@ -38,6 +38,18 @@ struct Point2D
 	{
 		return { a.X - b.X, a.Y - b.Y };
 	}
+
+
+	Direction2D towards(Point2D other)
+	{
+		Direction2D result = { 0, 0 };
+		if (other.X > X) result.X = 1;
+		if (other.X < X) result.X = -1;
+		if (other.Y > Y) result.Y = 1;
+		if (other.Y < Y) result.Y = -1;
+
+		return result;
+	}
 };
 
 struct Scale2D

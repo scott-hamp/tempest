@@ -33,6 +33,8 @@ std::string MapTile::getColorBG()
 	if (_objects.size() > 0)
 		return Strings::from(object()->getBehaviorProperty(L"visual", L"color-bg"));
 
+	if (_type == MapTileType_Wall) return { 0, 0, 0, 0};
+
 	return "background";
 }
 
@@ -43,7 +45,7 @@ std::string MapTile::getColorFG()
 
 	if (_terrain == MapTileTerrain_Grass) return "bright-green";
 
-	return "bright-grey";
+	return "bright-gray";
 }
 
 std::string MapTile::getDescription(bool longDescription)

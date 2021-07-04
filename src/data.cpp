@@ -2,6 +2,40 @@
 
 std::vector<std::wstring> Data::_mapObjectsLines;
 
+std::vector<std::string> Data::getAudio()
+{
+    std::vector<std::string> lines;
+    std::string line;
+
+    std::ifstream audioFile("data/audio.txt");
+    if (audioFile.is_open())
+    {
+        while (getline(audioFile, line))
+            lines.push_back(line);
+
+        audioFile.close();
+    }
+
+    return lines;
+}
+
+std::vector<std::string> Data::getFonts()
+{
+    std::vector<std::string> lines;
+    std::string line;
+
+    std::ifstream fontsFile("data/fonts.txt");
+    if (fontsFile.is_open())
+    {
+        while (getline(fontsFile, line))
+            lines.push_back(line);
+
+        fontsFile.close();
+    }
+
+    return lines;
+}
+
 std::vector<std::wstring> Data::getObject(std::wstring objectID)
 {
     bool toBreak = false;

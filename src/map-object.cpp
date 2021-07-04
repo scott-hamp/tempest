@@ -17,7 +17,6 @@ void MapObjectBehaviorProperty::setValue(std::wstring value)
 
 std::wstring MapObjectBehaviorProperty::value() { return _value; }
 
-
 MapObjectBehavior::MapObjectBehavior(std::wstring name) { _name = name; }
 
 MapObjectBehavior::~MapObjectBehavior() { }
@@ -52,7 +51,6 @@ void MapObjectBehavior::setPropertyValue(std::wstring key, std::wstring value)
 	}
 }
 
-
 MapObjectView::MapObjectView(int state, wchar_t chr)
 {
 	State = state;
@@ -60,7 +58,6 @@ MapObjectView::MapObjectView(int state, wchar_t chr)
 }
 
 MapObjectView::~MapObjectView() { }
-
 
 MapObject::MapObject() { }
 
@@ -283,6 +280,8 @@ void MapObject::removeFromInventory(MapObject* object)
 	_inventory.erase(_inventory.begin() + ind);
 }
 
+void MapObject::resetTurnActions() { _turnActions = 1; }
+
 void MapObject::tryInteraction(MapObjectInteraction interaction)
 {
 
@@ -346,10 +345,10 @@ void MapObject::takeDamage(int damage)
 
 void MapObject::takeTurnAction()
 {
-	if (turnActionRemaining()) _turnActions--;
+	if (turnActionsRemaining()) _turnActions--;
 }
 
-bool MapObject::turnActionRemaining() { return _turnActions > 0; }
+bool MapObject::turnActionsRemaining() { return _turnActions > 0; }
 
 void MapObject::updateEquipmentEffects()
 {

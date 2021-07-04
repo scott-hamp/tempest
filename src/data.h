@@ -20,6 +20,8 @@ class Data
 	private:
 		static std::vector<std::wstring> _mapObjectsLines;
 	public:
+		static std::vector<std::string> getAudio();
+		static std::vector<std::string> getFonts();
 		static std::vector<std::wstring> getObject(std::wstring);
 		static std::vector<std::wstring> getObjectList(std::wstring);
 		static std::vector<std::string> getPalette();

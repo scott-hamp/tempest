@@ -13,6 +13,8 @@ bright-cyan:119,191,207,255
 dark-magenta:177,84,207,255
 bright-magenta:218,91,214,255
 background:15,25,45,255
+dark-gray:21, 83, 82,255
+bright-gray:177,201,195,255
 dark-grey:21, 83, 82,255
 bright-grey:177,201,195,255
 white:255,255,255,255
