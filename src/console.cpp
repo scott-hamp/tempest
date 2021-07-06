@@ -46,6 +46,16 @@ bool Console::contains(Point2D point)
 	return point.X >= 0 && point.Y >= 0 && point.X < _size.Width && point.Y < _size.Height;
 }
 
+void Console::debug(std::string value)
+{
+	printf(value.c_str());
+}
+
+void Console::debug(std::wstring value)
+{
+	printf(Strings::from(value).c_str());
+}
+
 void Console::end()
 {
 	delete _vignetteSprite;

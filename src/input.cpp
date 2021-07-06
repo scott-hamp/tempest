@@ -77,11 +77,39 @@ void Input::handleKey(SDL_Keycode key)
 			return;
 		}
 
+		// Open / close
+		if (_commandActive == InputCommand_OpenClose)
+		{
+			if (direction.isZero())
+			{
+				UI::log("Open / close what? - (Direction)");
+				return;
+			}
+
+			auto to = Point2D::add(Map::player()->position(), direction);
+			auto other = Map::getTileObject(to);
+			
+			if (other == nullptr)
+				UI::log("There's nothing there to open or close.");
+			else
+				Map::objectTryInteraction(Map::player(), MapObjectInteraction_OpenCloseOther, other);
+
+			_commandActive = InputCommand_None;
+
+			return;
+		}
+
 		// Wear / wield
 		if (_commandActive == InputCommand_WearWield)
 		{
 			if (key < SDLK_a || key > Map::player()->getInventorySize() + SDLK_a)
+			{
+				auto size = Map::player()->getInventorySize();
+				char end = 'a' + (size - 1);
+				UI::log("Wear / wield what? - (a - " + std::string(1, end) + ")");
+
 				return;
+			}
 
 			auto index = key - SDLK_a;
 			Map::objectTryInteraction(Map::player(), MapObjectInteraction_WearWield, Map::player()->getInventory(index));
@@ -157,6 +185,22 @@ void Input::handleKey(SDL_Keycode key)
 		return;
 	}
 
+	// Open / close - 'c'
+	if (key == SDLK_c)
+	{
+		_commandActive = InputCommand_OpenClose;
+		UI::log("Open / close what? - (Direction)");
+
+		return;
+	}
+
+	// Pick up - 'g' / ','
+	if (key == SDLK_g || key == SDLK_COMMA)
+	{
+		Map::objectTryInteraction(Map::player(), MapObjectInteraction_PickUp);
+		return;
+	}
+
 	// Wait - '.' / numpad 5
 	if (key == SDLK_PERIOD || key == SDLK_KP_5)
 	{
@@ -172,7 +216,6 @@ void Input::handleKey(SDL_Keycode key)
 
 		auto size = Map::player()->getInventorySize();
 		char end = 'a' + (size - 1);
-
 		UI::log("Wear / wield what? - (a - " + std::string(1, end) + ")");
 		UI::setPanelVisible(UIPanel_Inventory, true);
 		Console::CursorSize = 0.0;

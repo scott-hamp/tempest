@@ -31,13 +31,22 @@ void UI::draw()
 		{
 			auto item = Map::player()->getEquipment(slot);
 			auto slotStr = slot + L": ";
-			std::wstring itemStr = L"(nothing)";
+			std::wstring itemDescription = L"(nothing)";
+			std::wstring itemStatsSummary;
 
-			if (item != nullptr) itemStr = item->getBehaviorProperty(L"description", L"short");
+			if (item != nullptr)
+			{
+				itemDescription = item->getBehaviorProperty(L"description", L"short");
+				itemStatsSummary = item->getStatsSummary();
+			}
+
 			auto itemStrColor = (item == nullptr) ? "dark-grey" : "yellow";
 
 			Console::write(slotStr, { 1, l + 4 });
-			Console::write(itemStr, { 25, l + 4 }, Console::getColor(itemStrColor));
+			Console::write(itemDescription, { 25, l + 4 }, Console::getColor(itemStrColor));
+			if(itemStatsSummary.length() > 0)
+				Console::write(L"[" + itemStatsSummary + L"]", { 26 + (int)itemDescription.length(), l + 4 }, Console::getColor("bright-grey"));
+
 			l++;
 		}
 	}
@@ -55,13 +64,18 @@ void UI::draw()
 		{
 			auto item = Map::player()->getInventory(i);
 			char letter = 'a' + i;
-			auto details = item->getBehaviorProperty(L"description", L"short");
-			auto eqat = Map::player()->getEquippedSlot(item);
-
-			if (eqat.length() > 0) details += L"(" + eqat + L")";
+			auto description = item->getBehaviorProperty(L"description", L"short");
+			std::wstring statsSummary = item->getStatsSummary();
+			auto equippedAt = Map::player()->getEquippedSlot(item);
 
 			Console::write(letter, { 1, i + 4 });
-			Console::write(L". " + details, { 2, i + 4 });
+			Console::write(L". " + description, { 2, i + 4 });
+
+			if (statsSummary.length() > 0)
+				Console::write(L"[" + statsSummary + L"]", { 5 + (int)description.length(), i + 4 }, Console::getColor("bright-grey"));
+
+			if(equippedAt.length() > 0)
+				Console::write(L"(" + equippedAt + L")", { 8 + (int)description.length() + (int)statsSummary.length(), i + 4 }, Console::getColor("yellow"));
 		}
 	}
 
@@ -80,10 +94,12 @@ void UI::draw()
 
 	if (panelIsVisible(UIPanel_Stats))
 	{
+		auto ac = Map::player()->getBehaviorProperty(L"ac", L"value");
+		auto attack = Map::player()->getBehaviorProperty(L"attack", L"dmg-roll") + L" →" + Map::player()->getBehaviorProperty(L"attack", L"to-hit");
 		auto attributes = Strings::split(Map::player()->getBehaviorProperty(L"attributes", L"value"), L',');
 
-		Console::write(L"(Player)  HP: 12/12  STR: " + attributes[0] + L"  DEX: " + attributes[1] + L"  CON: " + attributes[2] + L"  INT: " + attributes[3] + L"  WIS: " + attributes[4] + L"  CHA: " + attributes[5], { 1, 22 });
-		Console::write(L"LVL: 1  XP: 10  Village", { 1, 23 });
+		Console::write(L"(Player)  HP: 12/12  Armor: " + ac + L"  Attack: " + attack + L"  Level: 1  XP: 10", { 1, 22 });
+		Console::write(L"  STR: " + attributes[0] + L"  DEX: " + attributes[1] + L"  CON: " + attributes[2] + L"  INT: " + attributes[3] + L"  WIS: " + attributes[4] + L"  CHA: " + attributes[5] + L"   Village", { 1, 23 });
 	}
 }
 

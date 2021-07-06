@@ -40,6 +40,8 @@ class Console
 		static void clearLine(int);
 		static void clearLines(int, int);
 		static bool contains(Point2D);
+		static void debug(std::string);
+		static void debug(std::wstring);
 		static void end();
 		static SDL_Color getColor(std::string);
 		static void render();

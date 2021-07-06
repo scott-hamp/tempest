@@ -1,4 +1,4 @@
-#include "map-object.h"
+﻿#include "map-object.h"
 
 MapObjectBehaviorProperty::MapObjectBehaviorProperty(std::wstring key, std::wstring value)
 {
@@ -7,6 +7,45 @@ MapObjectBehaviorProperty::MapObjectBehaviorProperty(std::wstring key, std::wstr
 }
 
 MapObjectBehaviorProperty::~MapObjectBehaviorProperty() { }
+
+std::wstring MapObjectBehaviorProperty::getEffectValue(std::wstring effectName)
+{
+	auto effects = Strings::split(_value, L';');
+
+	for (auto eff : effects)
+	{
+		auto parts = Strings::split(eff, L':');
+		if (parts.size() != 2) continue;
+		if (parts[0].compare(effectName) != 0) continue;
+
+		return parts[1];
+	}
+
+	return L"";
+}
+
+void MapObjectBehaviorProperty::setEffectValue(std::wstring effectName, std::wstring effectValue)
+{
+	auto effects = Strings::split(_value, L';');
+	std::wstring valueNew = L"";
+
+	for (int i = 0; i < effects.size(); i++)
+	{
+		auto parts = Strings::split(effects[i], L':');
+		if (parts.size() != 2) return;
+		if (parts[0].compare(effectName) != 0)
+		{
+			std::wstring end = (i < effects.size() - 1) ? L";" : L"";
+			valueNew += parts[0] + L":" + parts[1] + end;
+			continue;
+		}
+
+		std::wstring end = (i < effects.size() - 1) ? L";" : L"";
+		valueNew += parts[0] + L":" + effectValue + end;
+	}
+
+	_value = valueNew;
+}
 
 std::wstring MapObjectBehaviorProperty::key() { return _key; }
 
@@ -26,6 +65,18 @@ void MapObjectBehavior::addProperty(MapObjectBehaviorProperty* prop)
 	_properties.push_back(prop);
 }
 
+std::wstring MapObjectBehavior::getPropertyEffectValue(std::wstring key, std::wstring effectName)
+{
+	for (const auto& prop : _properties)
+	{
+		if (prop->key().compare(key) != 0) continue;
+
+		return prop->getEffectValue(effectName);
+	}
+
+	return L"";
+}
+
 std::wstring MapObjectBehavior::getPropertyValue(std::wstring key)
 {
 	for (const auto &prop : _properties)
@@ -39,6 +90,17 @@ std::wstring MapObjectBehavior::getPropertyValue(std::wstring key)
 }
 
 std::wstring MapObjectBehavior::name() { return _name; }
+
+void MapObjectBehavior::setPropertyEffectValue(std::wstring key, std::wstring effectName, std::wstring effectValue)
+{
+	for (const auto& prop : _properties)
+	{
+		if (prop->key().compare(key) != 0) continue;
+
+		prop->setEffectValue(effectName, effectValue);
+		return;
+	}
+}
 
 void MapObjectBehavior::setPropertyValue(std::wstring key, std::wstring value)
 {
@@ -102,6 +164,7 @@ void MapObject::createEquipmentSlots()
 	_equipment[L"on legs"] = nullptr;
 	_equipment[L"on feet"] = nullptr;
 	_equipment[L"about body"] = nullptr;
+	_equipment[L"as cloak"] = nullptr;
 	_equipment[L"as light source"] = nullptr;
 }
 
@@ -120,6 +183,18 @@ std::wstring MapObject::getBehaviorProperty(std::wstring behaviorName, std::wstr
 		if(behavior->name().compare(behaviorName) != 0) continue;
 
 		return behavior->getPropertyValue(propertyKey);
+	}
+
+	return L"";
+}
+
+std::wstring MapObject::getBehaviorPropertyEffectValue(std::wstring behaviorName, std::wstring propertyKey, std::wstring effectName)
+{
+	for (const auto& behavior : _behaviors)
+	{
+		if (behavior->name().compare(behaviorName) != 0) continue;
+
+		return behavior->getPropertyEffectValue(propertyKey, effectName);
 	}
 
 	return L"";
@@ -215,6 +290,32 @@ int MapObject::getInventorySize()
 	return _inventory.size();
 }
 
+std::wstring MapObject::getStatsSummary()
+{
+	std::wstring result = L"";
+
+	if (hasBehavior(L"equipment"))
+	{
+		auto effects = Strings::split(getBehaviorProperty(L"equipment", L"equipped-effects"), L';');
+
+		for (auto eff : effects)
+		{
+			auto parts = Strings::split(eff, L':');
+			if (result.length() > 0) result += L", ";
+
+			if (parts[0].compare(L"ac") == 0) result += L"♦";
+			if (parts[0].compare(L"to-hit") == 0) result += L"→";
+			if (parts[0].compare(L"view-power") == 0) result += L"light: ";
+
+			result += parts[1];
+
+			if (parts[0].compare(L"duration") == 0) result += L" turns";
+		}
+	}
+
+	return result;
+}
+
 MapObjectView* MapObject::getView(Point2D point, int width)
 {
 	return _view[(point.Y * width) + point.X];
@@ -255,7 +356,33 @@ bool MapObject::isPassable(PassableType passableType)
 
 void MapObject::nextTurn()
 {
-	_turnActions = 1;
+	auto speedStr = getBehaviorProperty(L"speed", L"value");
+	if (speedStr.length() > 0)
+	{
+		auto speed = stoi(speedStr);
+		_turnActions = 1 + Random::nextInt(0, speed);
+	}
+	else
+		_turnActions = 1;
+
+	if (hasBehavior(L"has-inventory"))
+	{
+		for (auto const& item : _inventory)
+		{
+			if (!item->hasBehavior(L"equipment")) continue;
+			auto equippedAt = getEquippedSlot(item);
+			if (equippedAt.length() == 0) continue;
+
+			auto durationStr = item->getBehaviorPropertyEffectValue(L"equipment", L"equipped-effects", L"duration");
+			if (durationStr.length() == 0) continue;
+
+			auto duration = stoi(durationStr) - 1;
+			item->setBehaviorPropertyEffectValue(L"equipment", L"equipped-effects", L"duration", std::to_wstring(duration));
+
+			if (duration <= 0)
+				item->setBehaviorPropertyEffectValue(L"equipment", L"equipped-effects", L"view-power", L"0");
+		}
+	}
 }
 
 Point2D MapObject::position() { return _position; }
@@ -284,11 +411,31 @@ void MapObject::resetTurnActions() { _turnActions = 1; }
 
 void MapObject::tryInteraction(MapObjectInteraction interaction)
 {
+	// Open / close
+	if (interaction == MapObjectInteraction_OpenClose)
+	{
+		if (!hasBehavior(L"open-close")) return;
 
+		auto isOpen = getBehaviorProperty(L"open-close", L"is-open").compare(L"true") == 0;
+		isOpen = (isOpen) ? false : true;
+		setBehaviorProperty(L"open-close", L"is-open", (isOpen) ? L"true" : L"false");
+		if (isOpen)
+			setBehaviorProperty(L"visual", L"chr", getBehaviorProperty(L"open-close", L"open-chr"));
+		else
+			setBehaviorProperty(L"visual", L"chr", getBehaviorProperty(L"open-close", L"closed-chr"));
+
+		if (hasBehavior(L"storage")) return;
+
+		setBehaviorProperty(L"passable", L"solid", (isOpen) ? L"true" : L"false");
+		setBehaviorProperty(L"passable", L"light", (isOpen) ? L"true" : L"false");
+
+		return;
+	}
 }
 
 void MapObject::tryInteraction(MapObjectInteraction interaction, MapObject* other)
 {
+	// Wear / wield
 	if (interaction == MapObjectInteraction_WearWield)
 	{
 		if (!hasBehavior(L"has-equipment") || !other->hasBehavior(L"item"))
@@ -317,6 +464,17 @@ void MapObject::setBehaviorProperty(std::wstring behaviorName, std::wstring prop
 		if (behavior->name().compare(behaviorName) != 0) continue;
 
 		behavior->setPropertyValue(propertyKey, propertyValue);
+		return;
+	}
+}
+
+void MapObject::setBehaviorPropertyEffectValue(std::wstring behaviorName, std::wstring propertyKey, std::wstring effectName, std::wstring effectValue)
+{
+	for (const auto& behavior : _behaviors)
+	{
+		if (behavior->name().compare(behaviorName) != 0) continue;
+
+		behavior->setPropertyEffectValue(propertyKey, effectName, effectValue);
 		return;
 	}
 }
@@ -352,13 +510,24 @@ bool MapObject::turnActionsRemaining() { return _turnActions > 0; }
 
 void MapObject::updateEquipmentEffects()
 {
-	auto viewPower = stoi(getBehaviorProperty(L"view", L"power-default"));
+	auto ac = stoi(getBehaviorProperty(L"ac", L"default-value"));
+	int acMod = 0;
+	auto effects = getEquippedEffect(L"ac");
+	for (auto e : effects)
+		acMod += stoi(Strings::split(e, L':')[1]);
+	ac += acMod;
+	setBehaviorProperty(L"ac", L"value", std::to_wstring(ac));
 
+	std::wstring attackDmgRoll = getBehaviorProperty(L"attack", L"dmg-roll-default");
+	effects = getEquippedEffect(L"dmg-roll");
+	if (effects.size() > 0) attackDmgRoll = Strings::split(effects[0], L':')[1];
+	setBehaviorProperty(L"attack", L"dmg-roll", attackDmgRoll);
+
+	auto viewPower = stoi(getBehaviorProperty(L"view", L"power-default"));
 	int viewPowerMod = 0;
-	auto effects = getEquippedEffect(L"view-power");
+	effects = getEquippedEffect(L"view-power");
 	for (auto e : effects)
 		viewPowerMod += stoi(Strings::split(e, L':')[1]);
-
 	viewPower += viewPowerMod;
 	setBehaviorProperty(L"view", L"power", std::to_wstring(viewPower));
 }

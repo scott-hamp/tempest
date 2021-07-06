@@ -1,15 +1,103 @@
-@MONSTERS:wild_dog
+@ITEMS:cloth_hood,cloth_robe,common_kite_shield,iron_shortsword,travelers_cloak
+@MONSTERS:jumping_spider,wild_dog
+@VILLAGE_CREATURES:villager,pet_cat
+
+chest
+#description#short=A chest.#long=It's just a chest.
+#has-inventory
+#name#value=Chest
+#open-close#is-open=false#open-chr=▼#closed-chr=▲#opened-effects=dump-inventory#open-sound=chest#close-sound=chest
+#passable#solid=false#light=true
+#storage
+#visual#chr=▲#color-fg=yellow#color-bg=background
+
+cloth_hood
+#description#short=A cloth hood.#long=It's a simple cloth hood.
+#equipment#equip-at=on head#equipped-effects=ac:1
+#item
+#name#value=Cloth Hood
+#passable#solid=true#light=true
+#spawn#depth=0-5
+#visual#chr=Ç#color-fg=bright-grey#color-bg=background
+
+cloth_robe
+#description#short=A cloth robe.#long=It's a simple cloth robe.
+#equipment#equip-at=about body#equipped-effects=ac:2
+#item
+#name#value=Cloth Robe
+#passable#solid=true#light=true
+#spawn#depth=0-5
+#visual#chr=(#color-fg=bright-grey#color-bg=background
+
+common_kite_shield
+#description#short=A common kite shield.#long=It's a simple kite shield.
+#equipment#equip-at=in left hand#equipped-effects=ac:2
+#item
+#name#value=Common Kite Shield
+#passable#solid=true#light=true
+#spawn#depth=0-5
+#visual#chr=)#color-fg=bright-grey#color-bg=background
+
+door
+#description#short=A door.#long=It's just a door.
+#name#value=Door
+#open-close#is-open=false#open-chr=`#closed-chr=+#open-sound=door-open#close-sound=door-close
+#passable#solid=false#light=false
+#visual#chr=+#color-fg=yellow#color-bg=background
+
+iron_shortsword
+#description#short=An iron shortsword.#long=It's an iron shortsword.
+#equipment#equip-at=in right hand#equipped-effects=dmg-roll:1d6
+#item
+#name#value=Iron Shortsword
+#passable#solid=true#light=true
+#spawn#depth=0-5
+#visual#chr=/#color-fg=bright-grey#color-bg=background
+
+jumping_spider
+#ac#value=4#default-value=4
+#attack#dmg-roll=1d3#dmg-roll-default=1d3#to-hit=1#to-hit-default=1#verb=bites#verb-default=bites#sound=spider#sound-default=spider
+#description#short=A jumping spider.#long=A usually large and quick spider.
+#faction#value=monsters
+#hp#value=3
+#move
+#name#value=Jumping Spider
+#passable#solid=false#light=true
+#spawn#depth=1-5
+#speed#value=2
+#view#distance=8#power=12#power-default=12
+#visual#chr=a#color-fg=dark-green#color-bg=background
+#wander
+
+pet_cat
+#ac#value=1#default-value=1
+#attack#dmg-roll=1d2#dmg-roll-default=1d2#to-hit=1#to-hit-default=1#verb=hit#verb-default=hit#sound=hit-small#sound-default=hit-small
+#attributes#value=1,1,1,1,1,1#default-value=1,1,1,1,1,1
+#description#short=A pet cat.#long=It's a little pet cat.
+#faction#value=village
+#hp#value=3
+#move
+#name#value=Pet Cat
+#passable#solid=false#light=true
+#speed#value=2
+#view#distance=10#power=5#power-default=5
+#visual#chr=f#color-fg=bright-grey#color-bg=background
+#wander
 
 player
 #ac#value=3#default-value=3
 #attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=hit#verb-default=hit#sound=hit-small#sound-default=hit-small
 #attributes#value=5,5,5,5,5,5#default-value=5,5,5,5,5,5
 #description#short=Yourself.#long=It's you.
-#hp#value=10
-#name#value=Player
+#faction#value=village
 #has-equipment
 #has-inventory#starting=wooden_torch
+#hp#value=10
+#move
+#name#value=Player
+#open-close-other
 #passable#solid=false#light=true
+#speed#value=1
 #view#distance=8#power=4#power-default=4
 #visual#chr=@#color-fg=white#color-bg=background
 
@@ -27,27 +115,55 @@ stairs_up
 #stairs#dir=up
 #visual#chr=<#color-fg=bright-magenta#color-bg=background
 
+travelers_cloak
+#description#short=A traveler's cloak.#long=It's a cloak to keep you warm while traveling.
+#equipment#equip-at=on head#equipped-effects=ac:1
+#item
+#name#value=Traveler's Cloak
+#passable#solid=true#light=true
+#spawn#depth=0-5
+#visual#chr=ü#color-fg=bright-grey#color-bg=background
+
 tree
 #description#short=A tree.#long=It's a common tree.
 #name#value=Tree
 #visual#chr=♣#color-fg=bright-green#color-bg=background
 
+villager
+#ac#value=3#default-value=3
+#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=hit#verb-default=hit#sound=hit-small#sound-default=hit-small
+#attributes#value=3,3,3,3,3,3#default-value=3,3,3,3,3,3
+#description#short=A villager.#long=It's a villager.
+#faction#value=village
+#has-equipment
+#has-inventory
+#hp#value=5
+#move
+#name#value=Villager
+#open-close-other
+#passable#solid=false#light=true
+#view#distance=6#power=3#power-default=3
+#visual#chr=p#color-fg=bright-grey#color-bg=background
+#wander
+
 wild_dog
 #ac#value=3#default-value=3
 #attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=bites#verb-default=bites#sound=bite#sound-default=bite
 #description#short=A wild dog.#long=A vicious wild dog driven mad with hunger.
-#hostile
+#faction#value=monsters
 #hp#value=4
+#move
 #name#value=Wild Dog
 #passable#solid=false#light=true
 #spawn#depth=1-5
+#speed#value=1
 #view#distance=10#power=15#power-default=15
 #visual#chr=c#color-fg=dark-red#color-bg=background
 #wander
 
 wooden_torch
 #description#short=A wooden torch.#long=It's a simple torch.
-#equipment#equip-at=as light source#equipped-effects=view-power:10
+#equipment#equip-at=as light source#equipped-effects=duration:3000;view-power:10
 #item
 #name#value=Torch
 #passable#solid=true#light=true

@@ -6,9 +6,9 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "console.h"
 #include "enums.h"
 #include "geometry.h"
+#include "random.h"
 #include "strings.h"
 
 class MapObjectBehaviorProperty
@@ -19,7 +19,9 @@ class MapObjectBehaviorProperty
 	public:
 		MapObjectBehaviorProperty(std::wstring, std::wstring);
 		~MapObjectBehaviorProperty();
+		std::wstring getEffectValue(std::wstring);
 		std::wstring key();
+		void setEffectValue(std::wstring, std::wstring);
 		void setValue(std::wstring);
 		std::wstring value();
 };
@@ -33,8 +35,10 @@ class MapObjectBehavior
 		MapObjectBehavior(std::wstring);
 		~MapObjectBehavior();
 		void addProperty(MapObjectBehaviorProperty*);
+		std::wstring getPropertyEffectValue(std::wstring, std::wstring);
 		std::wstring getPropertyValue(std::wstring);
 		std::wstring name();
+		void setPropertyEffectValue(std::wstring, std::wstring, std::wstring);
 		void setPropertyValue(std::wstring, std::wstring);
 };
 
@@ -65,12 +69,14 @@ class MapObject
 		void createEquipmentSlots();
 		void createView(Size2D);
 		std::wstring getBehaviorProperty(std::wstring, std::wstring);
+		std::wstring getBehaviorPropertyEffectValue(std::wstring, std::wstring, std::wstring);
 		MapObject* getEquipment(std::wstring);
 		std::vector<std::wstring> getEquipmentSlots();
 		std::vector<std::wstring> getEquippedEffect(std::wstring);
 		std::wstring getEquippedSlot(MapObject*);
 		MapObject* getInventory(int);
 		int getInventorySize();
+		std::wstring getStatsSummary();
 		MapObjectView* getView(Point2D, int);
 		bool hasBehavior(std::wstring);
 		bool hasItem(MapObject*);
@@ -81,6 +87,7 @@ class MapObject
 		void resetTurnActions();
 		void setPosition(Point2D);
 		void setBehaviorProperty(std::wstring, std::wstring, std::wstring);
+		void setBehaviorPropertyEffectValue(std::wstring, std::wstring, std::wstring, std::wstring);
 		void setView(Point2D, int, int);
 		void setView(Point2D, int, int, wchar_t);
 		void takeDamage(int);

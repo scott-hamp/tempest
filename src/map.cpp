@@ -146,8 +146,36 @@ void Map::draw()
 		Console::write(_animations[0]->Chr, { _animations[0]->Position.X + _drawOffset.X, _animations[0]->Position.Y + _drawOffset.Y }, Console::getColor(_animations[0]->ColorFG), Console::getColor(_animations[0]->ColorBG));
 }
 
+bool Map::dumpObject(MapObject* object, Point2D point)
+{
+	if (getTilePassable(point, PassableType_Solid))
+	{
+		placeObject(object, point);
+		return true;
+	}
+
+	for (int x = -1; x < 2; x++)
+	{
+		for (int y = -1; y < 2; y++)
+		{
+			Point2D offset = { x, y };
+			auto to = Point2D::add(point, offset);
+
+			if (!getTilePassable(to, PassableType_Solid))
+				continue;
+
+			placeObject(object, to);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void Map::generate()
 {
+	std::vector<MapObject*> chests;
+
 	// At the village
 
 	if (_depth == 0)
@@ -164,21 +192,21 @@ void Map::generate()
 
 		std::vector<Rect> villageBuildings;
 
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			Rect rect;
 
 			while (true)
 			{
-				rect.Position = { 3 + Random::nextInt(0, _size.Width - 14), 1 + Random::nextInt(0, _size.Height - 11) };
-				rect.Size = { 5 + Random::nextInt(0, 7), 5 + Random::nextInt(0, 5) };
+				rect.Position = { 3 + Random::nextInt(0, _size.Width - 15), 1 + Random::nextInt(0, _size.Height - 10) };
+				rect.Size = { 7 + Random::nextInt(0, 4), 5 + Random::nextInt(0, 2) };
 
 				if (villageBuildings.size() == 0) break;
 
 				bool overlaps = false;
 				for (const auto& r : villageBuildings)
 				{
-					if (!rect.overlaps(r, 1)) continue;
+					if (!rect.overlaps(r, 2)) continue;
 
 					overlaps = true;
 					break;
@@ -217,6 +245,20 @@ void Map::generate()
 			}
 		}
 
+		for (int x = 1; x < _size.Width - 1; x++)
+		{
+			for (int y = 1; y < _size.Height - 1; y++)
+			{
+				if (getTileType({ x, y }) != MapTileType_Floor)
+					continue;
+
+				if (!(getTileType({ x - 1, y }) == MapTileType_Wall && getTileType({ x + 1, y }) == MapTileType_Wall) || (getTileType({ x, y - 1 }) == MapTileType_Wall && getTileType({ x, y + 1 }) == MapTileType_Wall))
+					continue;
+
+				placeObject(createObject(L"door"), { x, y });
+			}
+		}
+
 		for (int i = 0; i < 125; i++)
 		{
 			Point2D point;
@@ -247,6 +289,94 @@ void Map::generate()
 
 			placeObject(createObject(L"tree"), point);
 		}
+
+		std::vector<std::vector<std::wstring>> villagerNamesDescriptions =
+			{
+				{ L"Bedfre", L"It's Bedfre, the baker." },
+				{ L"Moda", L"It's Moda, the midwife." },
+				{ L"Ebed", L"It's Ebed, the blacksmith." },
+				{ L"Sige", L"It's Sige, the blacksmith's apprentice." },
+				{ L"Stephye", L"It's Stephye, the farmer." },
+				{ L"Adulf", L"It's Adulf, the apothecary." },
+				{ L"Coenwy", L"It's Coenwy, the troubador." },
+				{ L"Hearda", L"It's Hearda, the farmer." },
+				{ L"Ethes", L"It's Ethes, the bowyer." },
+				{ L"Eodhed", L"It's Eodhed, the alchemist." },
+				{ L"Aroth", L"It's Aroth, the mage." },
+				{ L"Gauwill", L"It's Gauwill, the fletcher." },
+				{ L"Piersym", L"It's Piersym, the priest." },
+				{ L"Eadwald", L"It's Eadwald, the armorer." },
+				{ L"Ceolfre", L"It's Ceolfre, a young boy." },
+				{ L"Genla", L"It's Genla, a young girl." }
+			};
+
+		for (int i = 0; i < villagerNamesDescriptions.size(); i++)
+		{
+			Point2D point;
+
+			while (true)
+			{
+				point = { Random::nextInt(5, _size.Width - 5), Random::nextInt(5, _size.Height - 5) };
+
+				if (!getTilePassable(point, PassableType_Solid))
+					continue;
+
+				break;
+			}
+
+			auto villager = createObject(L"villager");
+			villager->setBehaviorProperty(L"name", L"value", villagerNamesDescriptions[i][0]);
+			villager->setBehaviorProperty(L"description", L"long", villagerNamesDescriptions[i][1]);
+
+			placeObject(villager, point);
+		}
+
+		for (int i = 0; i < 4; i++)
+		{
+			Point2D point;
+
+			while (true)
+			{
+				point = { Random::nextInt(5, _size.Width - 5), Random::nextInt(5, _size.Height - 5) };
+
+				if (!getTilePassable(point, PassableType_Solid))
+					continue;
+
+				break;
+			}
+
+			placeObject(createObject(L"pet_cat"), point);
+		}
+
+		for (int i = 0; i < 5; i++)
+		{
+			Point2D point;
+
+			while (true)
+			{
+				point = { Random::nextInt(5, _size.Width - 5), Random::nextInt(5, _size.Height - 5) };
+
+				if (!getTilePassable(point, PassableType_Solid))
+					continue;
+
+				bool contains = false;
+				for (auto r : villageBuildings)
+				{
+					if (!r.contains(point)) continue;
+
+					contains = true;
+					break;
+				}
+
+				if (!contains) continue;
+
+				break;
+			}
+
+			auto chest = createObject(L"chest");
+			chests.push_back(chest);
+			placeObject(chest, point);
+		}
 	}
 	else
 	{
@@ -262,7 +392,7 @@ void Map::generate()
 			}
 		}
 
-		std::vector<Rect> rects;
+		std::vector<Rect> rooms;
 
 		for (int i = 0; i < 7 + Random::nextInt(0, 2); i++)
 		{
@@ -273,10 +403,10 @@ void Map::generate()
 				rect.Position = { 3 + Random::nextInt(0, _size.Width - 12), 1 + Random::nextInt(0, _size.Height - 10) };
 				rect.Size = { 3 + Random::nextInt(0, 7), 3 + Random::nextInt(0, 5) };
 
-				if (rects.size() == 0) break;
+				if (rooms.size() == 0) break;
 
 				bool overlaps = false;
-				for (const auto& r : rects)
+				for (const auto& r : rooms)
 				{
 					if (!rect.overlaps(r, 2)) continue;
 
@@ -289,10 +419,10 @@ void Map::generate()
 				break;
 			}
 
-			rects.push_back(rect);
+			rooms.push_back(rect);
 		}
 
-		for (const auto& r : rects)
+		for (const auto& r : rooms)
 		{
 			for (int x = 0; x < r.Size.Width; x++)
 			{
@@ -309,13 +439,13 @@ void Map::generate()
 			}
 		}
 
-		for (int i = 0; i < rects.size(); i++)
+		for (int i = 0; i < rooms.size(); i++)
 		{
 			int j = i + 1;
-			if (j == rects.size()) j = 0;
+			if (j == rooms.size()) j = 0;
 
-			auto at = rects[i].midpoint();
-			auto to = rects[j].midpoint();
+			auto at = rooms[i].midpoint();
+			auto to = rooms[j].midpoint();
 
 			auto path = findPath(at, to);
 			if (path->isComplete())
@@ -356,6 +486,55 @@ void Map::generate()
 			}
 		}
 
+		for (const auto& r : rooms)
+		{
+			for (int x = -1; x < r.Size.Width + 1; x++)
+			{
+				for (int y = -1; y < r.Size.Height + 1; y++)
+				{
+					Point2D point = { r.Position.X + x, r.Position.Y + y };
+
+					if (!contains(point)) continue;
+					if (getTileType(point) != MapTileType_Floor)
+						continue;
+					if (!((getTileType({point.X - 1, point.Y }) == MapTileType_Wall && getTileType({ point.X + 1, point.Y }) == MapTileType_Wall) || (getTileType({ point.X, point.Y - 1 }) == MapTileType_Wall && getTileType({ point.X, point.Y + 1 }) == MapTileType_Wall)))
+						continue;
+
+					placeObject(createObject(L"door"), point);
+				}
+			}
+		}
+
+		for (int i = 0; i < 4 + Random::nextInt(0, 3); i++)
+		{
+			Point2D point;
+
+			while (true)
+			{
+				point = { Random::nextInt(5, _size.Width - 5), Random::nextInt(5, _size.Height - 5) };
+
+				if (!getTilePassable(point, PassableType_Solid))
+					continue;
+
+				bool contains = false;
+				for (auto r : rooms)
+				{
+					if (!r.contains(point)) continue;
+
+					contains = true;
+					break;
+				}
+
+				if (!contains) continue;
+
+				break;
+			}
+
+			auto chest = createObject(L"chest");
+			chests.push_back(chest);
+			placeObject(chest, point);
+		}
+
 		auto monsterNames = Data::getObjectList(L"MONSTERS");
 		std::vector<std::wstring> monsterNamesSelected;
 
@@ -391,17 +570,89 @@ void Map::generate()
 		{
 			for (int i = 0; i < 8 + Random::nextInt(0, 2); i++)
 			{
+				Point2D point = { 0, 0 };
+
 				while (true)
 				{
-					Point2D point = { Random::nextInt(0, _size.Width), Random::nextInt(0, _size.Height) };
+					point = { Random::nextInt(0, _size.Width), Random::nextInt(0, _size.Height) };
 
 					if (!getTilePassable(point, PassableType_Solid) || getTileObject(point) != nullptr)
 						continue;
 
-					auto monster = createObject(monsterNamesSelected[Random::nextInt(0, monsterNamesSelected.size())]);
-					placeObject(monster, point);
-
 					break;
+				}
+
+				auto monster = createObject(monsterNamesSelected[Random::nextInt(0, monsterNamesSelected.size())]);
+				placeObject(monster, point);
+			}
+		}
+	}
+
+	auto itemNames = Data::getObjectList(L"ITEMS");
+	std::vector<std::wstring> itemNamesSelected;
+
+	for (auto itn : itemNames)
+	{
+		auto passes = false;
+		auto itemData = Data::getObject(itn);
+		for (int i = 0; i < itemData.size(); i++)
+		{
+			auto line = itemData[i].substr(1);
+			auto parts = Strings::split(line, L'#');
+
+			if (parts[0].compare(L"spawn") != 0) continue;
+
+			parts = Strings::split(parts[1], L'=');
+			parts = Strings::split(parts[1], L'-');
+
+			auto min = stoi(parts[0]);
+			auto max = stoi(parts[1]);
+
+			if (_depth < min || _depth > max) continue;
+
+			passes = true;
+			break;
+		}
+
+		if (!passes) continue;
+
+		itemNamesSelected.push_back(itn);
+	}
+
+	if (itemNamesSelected.size() > 0)
+	{
+		auto itemsBaseCount = (_depth == 0) ? 15 : 5;
+		for (int i = 0; i < itemsBaseCount + Random::nextInt(0, 5); i++)
+		{
+			auto item = createObject(itemNamesSelected[Random::nextInt(0, itemNamesSelected.size())]);
+
+			if (_depth == 0)
+			{
+				_objects.push_back(item);
+				chests[Random::nextInt(0, chests.size())]->addToInventory(item);
+			}
+			else
+			{
+				if (Random::nextInt(0, 10) > 3 && chests.size() > 0)
+				{
+					_objects.push_back(item);
+					chests[Random::nextInt(0, chests.size())]->addToInventory(item);
+				}
+				else
+				{
+					Point2D point = { 0, 0 };
+
+					while (true)
+					{
+						point = { Random::nextInt(0, _size.Width), Random::nextInt(0, _size.Height) };
+
+						if (!getTilePassable(point, PassableType_Solid) || getTileObject(point) != nullptr)
+							continue;
+
+						break;
+					}
+
+					placeObject(item, point);
 				}
 			}
 		}
@@ -641,6 +892,7 @@ void Map::nextTurn()
 
 void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interaction)
 {
+	// Ascend
 	if (interaction == MapObjectInteraction_Ascend)
 	{
 		if (object != _player) return;
@@ -655,6 +907,7 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 		return;
 	}
 
+	// Descend
 	if (interaction == MapObjectInteraction_Descend)
 	{
 		if (object != _player) return;
@@ -668,6 +921,47 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 
 		return;
 	}
+
+	// Dump inventory
+	if (interaction == MapObjectInteraction_DumpInventory)
+	{
+		if (!object->hasBehavior(L"has-inventory")) return;
+
+		for (int i = 0; i < object->getInventorySize(); i++)
+		{
+			auto ito = object->getInventory(i);
+			if (!dumpObject(ito, object->position())) 
+				return;
+
+			object->removeFromInventory(ito);
+		}
+
+		return;
+	}
+
+	// Pick up
+	if (interaction == MapObjectInteraction_PickUp)
+	{
+		if (!object->hasBehavior(L"has-inventory")) return;
+
+		auto other = getTileObject(object->position(), 1);
+
+		if (other == nullptr) return;
+
+		auto op = object->position();
+		object->takeTurnAction();
+
+		object->addToInventory(other);
+		_tiles[(op.Y * _size.Width) + op.X]->removeObject(other);
+
+		if (object == _player)
+		{
+			auto otherName = Strings::toLower(Strings::from(other->getBehaviorProperty(L"name", L"value")));
+			UI::log("You pick up the " + otherName + ".");
+		}
+
+		return;
+	}
 }
 
 void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interaction, Direction2D direction)
@@ -675,6 +969,8 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 	// Move
 	if (interaction == MapObjectInteraction_Move)
 	{
+		if (!object->hasBehavior(L"move")) return;
+
 		auto to = Point2D::add(object->position(), direction);
 
 		if (!getTilePassable(to, PassableType_Solid))
@@ -684,8 +980,20 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 			else
 			{
 				auto other = getTileObject(to);
+
 				if (other == nullptr) return;
-				if (!object->hasBehavior(L"attack") || !other->hasBehavior(L"attack")) return;
+
+				if (other->hasBehavior(L"open-close"))
+				{
+					if (other->getBehaviorProperty(L"open-close", L"is-open").compare(L"false") == 0)
+					{
+						objectTryInteraction(object, MapObjectInteraction_OpenCloseOther, other);
+						return;
+					}
+				}
+
+				if (!object->hasBehavior(L"attack") || !other->hasBehavior(L"attack") || object->getBehaviorProperty(L"faction", L"value").compare(other->getBehaviorProperty(L"faction", L"value")) == 0) 
+					return;
 
 				objectTryInteraction(object, MapObjectInteraction_Attack, other);
 			}
@@ -706,6 +1014,9 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 
 void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interaction, MapObject* other)
 {
+	auto objectName = Strings::toLower(Strings::from(object->getBehaviorProperty(L"name", L"value")));
+	auto otherName = Strings::toLower(Strings::from(other->getBehaviorProperty(L"name", L"value")));
+
 	// Attack
 	if (interaction == MapObjectInteraction_Attack)
 	{
@@ -718,9 +1029,6 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 		toHitRollExpression += toHitStr;
 		auto toHitRoll = new DiceRoll(toHitRollExpression);
 		auto ac = stoi(other->getBehaviorProperty(L"ac", L"value"));
-
-		auto objectName = Strings::toLower(Strings::from(object->getBehaviorProperty(L"name", L"value")));
-		auto otherName = Strings::toLower(Strings::from(other->getBehaviorProperty(L"name", L"value")));
 
 		if (toHitRoll->roll() <= ac)
 		{
@@ -768,6 +1076,66 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 		return;
 	}
 
+	// Open / close other
+	if (interaction == MapObjectInteraction_OpenCloseOther)
+	{
+		if (!object->hasBehavior(L"open-close-other"))
+		{
+			if (object == _player)
+				UI::log("You can't open or close anything.");
+
+			return;
+		}
+
+		auto isOpen1 = other->getBehaviorProperty(L"open-close", L"is-open");
+		other->tryInteraction(MapObjectInteraction_OpenClose);
+		auto isOpen2 = other->getBehaviorProperty(L"open-close", L"is-open");
+
+		if (isOpen1.compare(isOpen2) == 0)
+		{
+			if (object == _player)
+				UI::log("That can't be opened or closed.");
+
+			return;
+		}
+
+		object->takeTurnAction();
+
+		if (isOpen2.compare(L"true") == 0)
+		{
+			auto effects = Strings::split(other->getBehaviorProperty(L"open-close", L"opened-effects"), L';');
+
+			for (auto eff : effects)
+			{
+				if (eff.compare(L"dump-inventory") == 0)
+					objectTryInteraction(other, MapObjectInteraction_DumpInventory);
+			}
+		}
+
+		if (object == _player)
+		{
+			if(isOpen2.compare(L"true") == 0)
+				UI::log("You open the " + otherName + ".");
+			else
+				UI::log("You close the " + otherName + ".");
+		}
+
+		if (isOpen2.compare(L"true") == 0)
+		{
+			auto soundName = other->getBehaviorProperty(L"open-close", L"open-sound");
+			if (soundName.compare(L"none") != 0) 
+				Audio::playSound(Strings::from(soundName));
+		}
+		else
+		{
+			auto soundName = other->getBehaviorProperty(L"open-close", L"close-sound");
+			if (soundName.compare(L"none") != 0)
+				Audio::playSound(Strings::from(soundName));
+		}
+
+		return;
+	}
+
 	// Wear / wield
 	if (interaction == MapObjectInteraction_WearWield)
 	{
@@ -807,7 +1175,7 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 
 void Map::placeObject(MapObject* object, Point2D point)
 {
-	if (!contains(point)) return;
+	if (object == nullptr || !contains(point)) return;
 
 	if (std::find(_objects.begin(), _objects.end(), object) == _objects.end())
 		_objects.push_back(object);
@@ -886,17 +1254,22 @@ void Map::updateObject(MapObject* object)
 
 	object->takeTurnAction();
 
-	if (object->hasBehavior(L"hostile"))
+	if (object->hasBehavior(L"attack"))
 	{
-		if (object->getView(_player->position(), _size.Width)->State == 2)
+		if (object->getBehaviorProperty(L"faction", L"value").compare(_player->getBehaviorProperty(L"faction", L"value")) != 0)
 		{
-			auto path = findPath(object->position(), _player->position());
+			if (object->getView(_player->position(), _size.Width)->State == 2)
+			{
+				auto path = findPath(object->position(), _player->position());
 
-			if (!path->isComplete()) return;
-			if (path->length() < 2) return;
+				if (!path->isComplete()) return;
+				if (path->length() < 2) return;
 
-			auto direction = object->position().towards(path->get(1));
-			objectTryInteraction(object, MapObjectInteraction_Move, direction);
+				auto direction = object->position().towards(path->get(1));
+				objectTryInteraction(object, MapObjectInteraction_Move, direction);
+
+				return;
+			}
 		}
 	}
 

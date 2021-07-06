@@ -45,6 +45,7 @@ class Map
 		static Point2D positionFromConsolePosition(Point2D);
 		static Point2D positionToConsolePosition(Point2D);
 		static void draw();
+		static bool dumpObject(MapObject*, Point2D);
 		static Path* findPath(Point2D, Point2D);
 		static void generate();
 		static std::string getTileDescription(Point2D, bool = false);

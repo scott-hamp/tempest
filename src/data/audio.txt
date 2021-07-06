@@ -1,5 +1,6 @@
-dungeon:music,assets/audio/dungeon-0.ogg
-village:music,assets/audio/village-0.ogg
+chest:sound,assets/audio/chest.ogg
+dungeon:music,assets/audio/dungeon.ogg
+village:music,assets/audio/village.ogg
 bite:sound,assets/audio/bite.ogg
 door-close:sound,assets/audio/door-close.ogg
 door-open:sound,assets/audio/door-open.ogg
@@ -8,3 +9,4 @@ hit-medium:sound,assets/audio/hit-medium.ogg
 hit-sharp:sound,assets/audio/hit-sharp.ogg
 hit-small:sound,assets/audio/hit-small.ogg
 potion-quaff:sound,assets/audio/potion-quaff.ogg
+spider:sound,assets/audio/spider.ogg

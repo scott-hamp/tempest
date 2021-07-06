@@ -7,6 +7,7 @@ enum InputCommand
 {
 	InputCommand_None,
 	InputCommand_Examine,
+	InputCommand_OpenClose,
 	InputCommand_WearWield
 };
 
@@ -15,7 +16,11 @@ enum MapObjectInteraction
 	MapObjectInteraction_Ascend,
 	MapObjectInteraction_Attack,
 	MapObjectInteraction_Descend,
+	MapObjectInteraction_DumpInventory,
 	MapObjectInteraction_Move,
+	MapObjectInteraction_OpenClose,
+	MapObjectInteraction_OpenCloseOther,
+	MapObjectInteraction_PickUp,
 	MapObjectInteraction_WearWield
 };
 
