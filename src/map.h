@@ -18,12 +18,16 @@ class Path;
 class MapAnimation
 {
 	public:
-		MapAnimation(Point2D, wchar_t, std::string, std::string, double);
+		MapAnimation(MapAnimationType, Point2D, wchar_t, std::string, std::string, double);
+		MapAnimation(MapAnimationType, Point2D, wchar_t, std::string, std::string, Point2D, double);
+		MapAnimationType Type;
 		wchar_t Chr;
 		std::string ColorBG;
 		std::string ColorFG;
 		Point2D Position;
+		Point2D Target;
 		double Timer;
+		double TimerLength;
 };
 
 class Map
@@ -48,6 +52,7 @@ class Map
 		static bool dumpObject(MapObject*, Point2D);
 		static Path* findPath(Point2D, Point2D);
 		static void generate();
+		static int getStepDistance(Point2D, Point2D);
 		static std::string getTileDescription(Point2D, bool = false);
 		static int getTileLight(Point2D);
 		static MapObject* getTileObject(Point2D, int = 0);

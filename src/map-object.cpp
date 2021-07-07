@@ -152,6 +152,10 @@ void MapObject::clearView()
 
 void MapObject::createEquipmentSlots()
 {
+	_equipment[L"about body"] = nullptr;
+	_equipment[L"as cloak"] = nullptr;
+	_equipment[L"as light source"] = nullptr;
+	_equipment[L"as missles"] = nullptr;
 	_equipment[L"on head"] = nullptr;
 	_equipment[L"on face"] = nullptr;
 	_equipment[L"on shoulders"] = nullptr;
@@ -163,9 +167,6 @@ void MapObject::createEquipmentSlots()
 	_equipment[L"on left ring finger"] = nullptr;
 	_equipment[L"on legs"] = nullptr;
 	_equipment[L"on feet"] = nullptr;
-	_equipment[L"about body"] = nullptr;
-	_equipment[L"as cloak"] = nullptr;
-	_equipment[L"as light source"] = nullptr;
 }
 
 void MapObject::createView(Size2D size)
@@ -395,6 +396,9 @@ void MapObject::removeFromInventory(MapObject* object)
 	if (std::find(_inventory.begin(), _inventory.end(), object) == _inventory.end())
 		return;
 
+	auto equippedAt = getEquippedSlot(object);
+	if (equippedAt.length() > 0) _equipment[equippedAt] = nullptr;
+
 	auto ind = -1;
 	for (int i = 0; i < _inventory.size(); i++)
 	{
@@ -441,15 +445,21 @@ void MapObject::tryInteraction(MapObjectInteraction interaction, MapObject* othe
 		if (!hasBehavior(L"has-equipment") || !other->hasBehavior(L"item"))
 			return;
 
-		auto eqat = other->getBehaviorProperty(L"equipment", L"equip-at");
-		if (eqat.length() == 0) return;
+		auto equippedAt = other->getBehaviorProperty(L"equipment", L"equip-at");
+		if (equippedAt.length() == 0) return;
 
 		takeTurnAction();
 
+		if (equippedAt.compare(L"in hands") == 0)
+			equippedAt = L"in right hand";
+		
 		if (getEquippedSlot(other) != L"")
-			_equipment[eqat] = nullptr;
+			_equipment[equippedAt] = nullptr;
 		else
-			_equipment[eqat] = other;
+			_equipment[equippedAt] = other;
+
+		if (equippedAt.compare(L"in hands") == 0)
+			_equipment[L"in left hand"] = nullptr;
 
 		updateEquipmentEffects();
 
@@ -522,6 +532,11 @@ void MapObject::updateEquipmentEffects()
 	effects = getEquippedEffect(L"dmg-roll");
 	if (effects.size() > 0) attackDmgRoll = Strings::split(effects[0], L':')[1];
 	setBehaviorProperty(L"attack", L"dmg-roll", attackDmgRoll);
+
+	std::wstring attackRange= getBehaviorProperty(L"attack", L"range-default");
+	effects = getEquippedEffect(L"range");
+	if (effects.size() > 0) attackRange = Strings::split(effects[0], L':')[1];
+	setBehaviorProperty(L"attack", L"range", attackRange);
 
 	auto viewPower = stoi(getBehaviorProperty(L"view", L"power-default"));
 	int viewPowerMod = 0;

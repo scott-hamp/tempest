@@ -32,20 +32,33 @@ void UI::draw()
 			auto item = Map::player()->getEquipment(slot);
 			auto slotStr = slot + L": ";
 			std::wstring itemDescription = L"(nothing)";
+			std::wstring itemQuantity;
 			std::wstring itemStatsSummary;
 
 			if (item != nullptr)
 			{
 				itemDescription = item->getBehaviorProperty(L"description", L"short");
+				itemQuantity = item->getBehaviorProperty(L"item", L"quantity");
 				itemStatsSummary = item->getStatsSummary();
+
+				if (itemQuantity.length() > 0)
+				{
+					if(stoi(itemQuantity) > 1) 
+						itemDescription = item->getBehaviorProperty(L"description", L"short-plural");
+				}
 			}
 
 			auto itemStrColor = (item == nullptr) ? "dark-grey" : "yellow";
 
 			Console::write(slotStr, { 1, l + 4 });
 			Console::write(itemDescription, { 25, l + 4 }, Console::getColor(itemStrColor));
-			if(itemStatsSummary.length() > 0)
-				Console::write(L"[" + itemStatsSummary + L"]", { 26 + (int)itemDescription.length(), l + 4 }, Console::getColor("bright-grey"));
+			if(itemQuantity.length() > 0)
+				Console::write(L"(x" + itemQuantity + L")", { 26 + (int)itemDescription.length(), l + 4 }, Console::getColor("bright-grey"));
+			if (itemStatsSummary.length() > 0)
+			{
+				auto wx = (itemQuantity.length() > 0) ? 31 + (int)itemDescription.length() + (int)itemQuantity.length() : 26 + (int)itemDescription.length();
+				Console::write(L"[" + itemStatsSummary + L"]", { wx, l + 4 }, Console::getColor("bright-grey"));
+			}
 
 			l++;
 		}
@@ -65,17 +78,35 @@ void UI::draw()
 			auto item = Map::player()->getInventory(i);
 			char letter = 'a' + i;
 			auto description = item->getBehaviorProperty(L"description", L"short");
+			auto quantity = item->getBehaviorProperty(L"item", L"quantity");
 			std::wstring statsSummary = item->getStatsSummary();
 			auto equippedAt = Map::player()->getEquippedSlot(item);
+
+			if (quantity.length() > 0)
+			{
+				if (stoi(quantity) > 1)
+					description = item->getBehaviorProperty(L"description", L"short-plural");
+			}
 
 			Console::write(letter, { 1, i + 4 });
 			Console::write(L". " + description, { 2, i + 4 });
 
-			if (statsSummary.length() > 0)
-				Console::write(L"[" + statsSummary + L"]", { 5 + (int)description.length(), i + 4 }, Console::getColor("bright-grey"));
+			auto wx = 5 + (int)description.length();
 
-			if(equippedAt.length() > 0)
-				Console::write(L"(" + equippedAt + L")", { 8 + (int)description.length() + (int)statsSummary.length(), i + 4 }, Console::getColor("yellow"));
+			if (quantity.length() > 0)
+			{
+				Console::write(L"(x" + quantity + L")", { wx, i + 4 }, Console::getColor("bright-grey"));
+				wx += quantity.length() + 4;
+			}
+
+			if (statsSummary.length() > 0)
+			{
+				Console::write(L"[" + statsSummary + L"]", { wx, i + 4 }, Console::getColor("bright-grey"));
+				wx += statsSummary.length() + 3;
+			}
+
+			if (equippedAt.length() > 0)
+				Console::write(L"(" + equippedAt + L")", { wx, i + 4 }, Console::getColor("yellow"));
 		}
 	}
 
@@ -99,7 +130,7 @@ void UI::draw()
 		auto attributes = Strings::split(Map::player()->getBehaviorProperty(L"attributes", L"value"), L',');
 
 		Console::write(L"(Player)  HP: 12/12  Armor: " + ac + L"  Attack: " + attack + L"  Level: 1  XP: 10", { 1, 22 });
-		Console::write(L"  STR: " + attributes[0] + L"  DEX: " + attributes[1] + L"  CON: " + attributes[2] + L"  INT: " + attributes[3] + L"  WIS: " + attributes[4] + L"  CHA: " + attributes[5] + L"   Village", { 1, 23 });
+		Console::write(L"STR: " + attributes[0] + L"  DEX: " + attributes[1] + L"  CON: " + attributes[2] + L"  INT: " + attributes[3] + L"  WIS: " + attributes[4] + L"  CHA: " + attributes[5] + L"   Village", { 1, 23 });
 	}
 }
 

@@ -1,12 +1,26 @@
 ﻿#include "map.h"
 
-MapAnimation::MapAnimation(Point2D position, wchar_t chr, std::string fg, std::string bg, double time)
+MapAnimation::MapAnimation(MapAnimationType type, Point2D position, wchar_t chr, std::string fg, std::string bg, double time)
 {
+	Type = type;
 	Position = position;
 	Chr = chr;
 	ColorFG = fg;
 	ColorBG = bg;
 	Timer = time;
+	TimerLength = Timer;
+}
+
+MapAnimation::MapAnimation(MapAnimationType type, Point2D position, wchar_t chr, std::string fg, std::string bg, Point2D target, double time)
+{
+	Type = type;
+	Position = position;
+	Chr = chr;
+	ColorFG = fg;
+	ColorBG = bg;
+	Target = target;
+	Timer = time;
+	TimerLength = Timer;
 }
 
 std::vector<MapAnimation*> Map::_animations;
@@ -27,8 +41,39 @@ void Map::animate(double delta)
 	if (_animations.size() == 0) return;
 
 	_animations[0]->Timer -= delta;
-	if (_animations[0]->Timer <= 0.0) 
-		_animations.erase(_animations.begin());
+
+	if (_animations[0]->Type == MapAnimationType_Simple)
+	{
+		if (_animations[0]->Timer <= 0.0)
+			_animations.erase(_animations.begin());
+
+		return;
+	}
+
+	if (_animations[0]->Type == MapAnimationType_Missle)
+	{
+		if (_animations[0]->Timer <= 0.0)
+		{
+			if (_animations[0]->Position.equals(_animations[0]->Target))
+			{
+				_animations.erase(_animations.begin());
+				return;
+			}
+
+			_animations[0]->Timer = _animations[0]->TimerLength;
+
+			if (_animations[0]->Target.X > _animations[0]->Position.X)
+				_animations[0]->Position.X++;
+			if (_animations[0]->Target.X < _animations[0]->Position.X)
+				_animations[0]->Position.X--;
+			if (_animations[0]->Target.Y > _animations[0]->Position.Y)
+				_animations[0]->Position.Y++;
+			if (_animations[0]->Target.Y < _animations[0]->Position.Y)
+				_animations[0]->Position.Y--;
+		}
+
+		return;
+	}
 }
 
 bool Map::contains(Point2D point)
@@ -79,8 +124,6 @@ MapObject* Map::createObject(std::wstring id)
 
 		object->addBehavior(behavior);
 
-		if (behaviorName.compare(L"view") == 0) object->createView(_size);
-		
 		if (behaviorName.compare(L"has-equipment") == 0)
 			object->createEquipmentSlots();
 
@@ -96,6 +139,20 @@ MapObject* Map::createObject(std::wstring id)
 					object->addToInventory(createObject(siid));
 			}
 		}
+
+		if (behaviorName.compare(L"item") == 0)
+		{
+			auto quantityRoll = behavior->getPropertyValue(L"quantity");
+
+			auto diceRoll = new DiceRoll(Strings::from(quantityRoll));
+			auto quantity = diceRoll->roll();
+
+			behavior->setPropertyValue(L"quantity", std::to_wstring(quantity));
+
+			delete diceRoll;
+		}
+
+		if (behaviorName.compare(L"view") == 0) object->createView(_size);
 	}
 
 	return object;
@@ -821,6 +878,24 @@ Path* Map::findPath(Point2D from, Point2D to)
 	return path;
 }
 
+int Map::getStepDistance(Point2D from, Point2D to)
+{
+	Point2D at = { from.X, from.Y };
+	int distance = 0;
+
+	while (!at.equals(to))
+	{
+		if (to.X > at.X) at.X++;
+		if (to.X < at.X) at.X--;
+		if (to.Y > at.Y) at.Y++;
+		if (to.Y < at.Y) at.Y--;
+
+		distance++;
+	}
+
+	return distance;
+}
+
 std::string Map::getTileDescription(Point2D point, bool longDescription)
 {
 	if (!contains(point)) return "";
@@ -957,6 +1032,14 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 		if (object == _player)
 		{
 			auto otherName = Strings::toLower(Strings::from(other->getBehaviorProperty(L"name", L"value")));
+
+			auto quantityStr = other->getBehaviorProperty(L"item", L"quantity");
+			if (quantityStr.length() > 0)
+			{
+				if (stoi(quantityStr) > 1)
+					otherName = Strings::toLower(Strings::from(other->getBehaviorProperty(L"name", L"value-plural")));
+			}
+
 			UI::log("You pick up the " + otherName + ".");
 		}
 
@@ -995,6 +1078,18 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 				if (!object->hasBehavior(L"attack") || !other->hasBehavior(L"attack") || object->getBehaviorProperty(L"faction", L"value").compare(other->getBehaviorProperty(L"faction", L"value")) == 0) 
 					return;
 
+				if (object == _player && _player->getBehaviorProperty(L"attack", L"range").compare(L"1") != 0)
+				{
+					auto rangedWeapon = _player->getEquipment(L"in right hand");
+
+					if (rangedWeapon != nullptr)
+						UI::log("You're too close to attack with your " + Strings::toLower(Strings::from(rangedWeapon->getBehaviorProperty(L"name", L"value"))) + ".");
+					else
+						UI::log("You're too close to attack.");
+
+					return;
+				}
+
 				objectTryInteraction(object, MapObjectInteraction_Attack, other);
 			}
 
@@ -1029,15 +1124,41 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 		toHitRollExpression += toHitStr;
 		auto toHitRoll = new DiceRoll(toHitRollExpression);
 		auto ac = stoi(other->getBehaviorProperty(L"ac", L"value"));
+		auto distance = getStepDistance(object->position(), other->position());
 
-		if (toHitRoll->roll() <= ac)
+		if (distance > 1)
+		{
+			auto rangedWeapon = object->getEquipment(L"in right hand");
+
+			if (rangedWeapon != nullptr)
+			{
+				auto uses = rangedWeapon->getBehaviorPropertyEffectValue(L"equipment", L"used-effects", L"uses");
+
+				if (uses.length() > 0)
+				{
+					auto missles = object->getEquipment(L"as missles");
+					auto quantityStr = missles->getBehaviorProperty(L"item", L"quantity");
+
+					if (quantityStr.length() > 0)
+					{
+						auto quantity = stoi(quantityStr) - 1;
+
+						if (quantity <= 0)
+							object->removeFromInventory(missles);
+					}
+				}
+			}
+		}
+
+		if (toHitRoll->roll() - (distance - 1) <= ac)
 		{
 			if (object == _player)
 				UI::log("You miss the " + otherName + ".");
 			if (other == _player)
-				UI::log("The " + otherName + " misses you.");
+				UI::log("The " + objectName + " misses you.");
 
-			addAnimation(new MapAnimation(other->position(), L'/', "white", "background", 80));
+			auto animation = (distance > 1) ? new MapAnimation(MapAnimationType_Missle, object->position(), L'-', "white", "background", other->position(), 10) : new MapAnimation(MapAnimationType_Simple, other->position(), L'/', "white", "background", 80);
+			addAnimation(animation);
 
 			delete toHitRoll;
 			return;
@@ -1047,6 +1168,9 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 		auto damage = damageRoll->roll();
 
 		other->takeDamage(damage);
+
+		if(distance > 1)
+			addAnimation(new MapAnimation(MapAnimationType_Missle, object->position(), L'-', "white", "background", other->position(), 10));
 
 		if (object == _player)
 			UI::log("You " + Strings::from(object->getBehaviorProperty(L"attack", L"verb")) + " the " + otherName + ".");
@@ -1065,7 +1189,7 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 			}
 		}
 
-		addAnimation(new MapAnimation(other->position(), animationChr, "bright-red", "background", 80));
+		addAnimation(new MapAnimation(MapAnimationType_Simple, other->position(), animationChr, "bright-red", "background", 80));
 
 		auto attackSoundName = object->getBehaviorProperty(L"attack", L"sound");
 		if(attackSoundName.compare(L"none") != 0) 
@@ -1157,6 +1281,13 @@ void Map::objectTryInteraction(MapObject* object, MapObjectInteraction interacti
 		}
 
 		auto otherName = Strings::toLower(Strings::from(other->getBehaviorProperty(L"name", L"value")));
+
+		auto quantityStr = other->getBehaviorProperty(L"item", L"quantity");
+		if (quantityStr.length() > 0)
+		{
+			if(stoi(quantityStr) > 1) 
+				otherName = Strings::toLower(Strings::from(other->getBehaviorProperty(L"name", L"value-plural")));
+		}
 
 		if (eqat2.compare(L"") != 0)
 		{

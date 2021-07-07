@@ -7,8 +7,15 @@ enum InputCommand
 {
 	InputCommand_None,
 	InputCommand_Examine,
+	InputCommand_Fire,
 	InputCommand_OpenClose,
 	InputCommand_WearWield
+};
+
+enum MapAnimationType
+{
+	MapAnimationType_Simple,
+	MapAnimationType_Missle
 };
 
 enum MapObjectInteraction

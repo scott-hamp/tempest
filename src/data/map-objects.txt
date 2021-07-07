@@ -1,4 +1,4 @@
-@ITEMS:cloth_hood,cloth_robe,common_kite_shield,iron_shortsword,travelers_cloak
+@ITEMS:cloth_hood,cloth_robe,common_kite_shield,hunting_bow,iron_shortsword,travelers_cloak,wooden_arrow
 @MONSTERS:jumping_spider,wild_dog
 @VILLAGE_CREATURES:villager,pet_cat
 
@@ -45,6 +45,15 @@ door
 #passable#solid=false#light=false
 #visual#chr=+#color-fg=yellow#color-bg=background
 
+hunting_bow
+#description#short=A hunting bow.#long=It's a bow for hunting small game.
+#equipment#equip-at=in hands#equipped-effects=dmg-roll:1d6;range:8#used-effects=uses:arrows
+#item
+#name#value=Hunting Bow
+#passable#solid=true#light=true
+#spawn#depth=0-5
+#visual#chr={#color-fg=bright-grey#color-bg=background
+
 iron_shortsword
 #description#short=An iron shortsword.#long=It's an iron shortsword.
 #equipment#equip-at=in right hand#equipped-effects=dmg-roll:1d6
@@ -56,7 +65,7 @@ iron_shortsword
 
 jumping_spider
 #ac#value=4#default-value=4
-#attack#dmg-roll=1d3#dmg-roll-default=1d3#to-hit=1#to-hit-default=1#verb=bites#verb-default=bites#sound=spider#sound-default=spider
+#attack#dmg-roll=1d3#dmg-roll-default=1d3#to-hit=1#to-hit-default=1#range=1#range-default=1#verb=bites#verb-default=bites#sound=spider#sound-default=spider
 #description#short=A jumping spider.#long=A usually large and quick spider.
 #faction#value=monsters
 #hp#value=3
@@ -71,7 +80,7 @@ jumping_spider
 
 pet_cat
 #ac#value=1#default-value=1
-#attack#dmg-roll=1d2#dmg-roll-default=1d2#to-hit=1#to-hit-default=1#verb=hit#verb-default=hit#sound=hit-small#sound-default=hit-small
+#attack#dmg-roll=1d2#dmg-roll-default=1d2#to-hit=1#to-hit-default=1#range=1#range-default=1#verb=hit#verb-default=hit#sound=hit-small#sound-default=hit-small
 #attributes#value=1,1,1,1,1,1#default-value=1,1,1,1,1,1
 #description#short=A pet cat.#long=It's a little pet cat.
 #faction#value=village
@@ -86,12 +95,12 @@ pet_cat
 
 player
 #ac#value=3#default-value=3
-#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=hit#verb-default=hit#sound=hit-small#sound-default=hit-small
+#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#range=1#range-default=1#verb=hit#verb-default=hit#sound=hit-small#sound-default=hit-small
 #attributes#value=5,5,5,5,5,5#default-value=5,5,5,5,5,5
 #description#short=Yourself.#long=It's you.
 #faction#value=village
 #has-equipment
-#has-inventory#starting=wooden_torch
+#has-inventory#starting=hunting_bow,wooden_arrow,wooden_torch
 #hp#value=10
 #move
 #name#value=Player
@@ -131,7 +140,7 @@ tree
 
 villager
 #ac#value=3#default-value=3
-#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=hit#verb-default=hit#sound=hit-small#sound-default=hit-small
+#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#range=1#range-default=1#verb=hit#verb-default=hit#sound=hit-small#sound-default=hit-small
 #attributes#value=3,3,3,3,3,3#default-value=3,3,3,3,3,3
 #description#short=A villager.#long=It's a villager.
 #faction#value=village
@@ -139,7 +148,7 @@ villager
 #has-inventory
 #hp#value=5
 #move
-#name#value=Villager
+#name#value=Villager#is-proper-named=true
 #open-close-other
 #passable#solid=false#light=true
 #view#distance=6#power=3#power-default=3
@@ -148,7 +157,7 @@ villager
 
 wild_dog
 #ac#value=3#default-value=3
-#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#verb=bites#verb-default=bites#sound=bite#sound-default=bite
+#attack#dmg-roll=1d4#dmg-roll-default=1d4#to-hit=1#to-hit-default=1#range=1#range-default=1#verb=bites#verb-default=bites#sound=bite#sound-default=bite
 #description#short=A wild dog.#long=A vicious wild dog driven mad with hunger.
 #faction#value=monsters
 #hp#value=4
@@ -160,6 +169,15 @@ wild_dog
 #view#distance=10#power=15#power-default=15
 #visual#chr=c#color-fg=dark-red#color-bg=background
 #wander
+
+wooden_arrow
+#description#short=A wooden arrow.#long=It's a simple wooden arrow.#short-plural=Some wooden arrows.#long-plural=Some simple wooden arrows.
+#equipment#equip-at=as missles#missle-type=arrows
+#item#quantity=2d8
+#name#value=Wooden Arrow#value-plural=Wooden Arrows
+#passable#solid=true#light=true
+#spawn#depth=0-5
+#visual#chr=}#color-fg=bright-grey#color-bg=background
 
 wooden_torch
 #description#short=A wooden torch.#long=It's a simple torch.

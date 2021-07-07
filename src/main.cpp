@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 		printf("Creating window...\n");
 
 		_window = SDL_CreateWindow
-		("SDL Console Template",
+		("Tempest",
 			SDL_WINDOWPOS_CENTERED,
 			SDL_WINDOWPOS_CENTERED,
 			displayMode.w * 0.1,

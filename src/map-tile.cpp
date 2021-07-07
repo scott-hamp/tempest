@@ -52,11 +52,17 @@ std::string MapTile::getDescription(bool longDescription)
 {
 	if (object() != nullptr)
 	{
-		auto bpkey = (longDescription) ? L"long" : L"short";
-		auto wstr = object()->getBehaviorProperty(L"description", bpkey);
-		std::string str(wstr.begin(), wstr.end());
+		auto descriptionKey = (longDescription) ? L"long" : L"short";
 
-		return str;
+		auto quantityStr = object()->getBehaviorProperty(L"item", L"quantity");
+		if (quantityStr.length() > 0)
+		{
+			if(stoi(quantityStr) > 1) descriptionKey = (longDescription) ? L"long-plural" : L"short-plural";
+		}
+
+		auto description = object()->getBehaviorProperty(L"description", descriptionKey);
+
+		return Strings::from(description);
 	}
 
 	if (longDescription)

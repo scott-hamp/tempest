@@ -77,6 +77,59 @@ void Input::handleKey(SDL_Keycode key)
 			return;
 		}
 
+		// Fire
+		if (_commandActive == InputCommand_Fire)
+		{
+			auto at = Map::positionFromConsolePosition(Console::CursorPosition);
+
+			// 'Enter' / 'Numpad 5'
+			if (key == SDLK_RETURN || key == SDLK_KP_5)
+			{
+				auto other = Map::getTileObject(Map::positionFromConsolePosition(Console::CursorPosition));
+
+				if (other == nullptr)
+					UI::log("There's nothing to fire at there.");
+				else
+				{
+					if (other == Map::player())
+						UI::log("You can't fire at yourself.");
+					else
+					{
+						if (!other->hasBehavior(L"ac") || !other->hasBehavior(L"hp"))
+							UI::log("That can't be attacked.");
+						else
+						{
+							if (Map::player()->getBehaviorProperty(L"faction", L"value").compare(other->getBehaviorProperty(L"faction", L"value")) == 0)
+								UI::log("You wouldn't think of it!");
+							else
+								Map::objectTryInteraction(Map::player(), MapObjectInteraction_Attack, other);
+						}
+					}
+				}
+
+				_commandActive = InputCommand_None;
+				Console::CursorSize = 0.2;
+				Console::CursorPosition = Map::positionToConsolePosition(Map::player()->position());
+
+				return;
+			}
+
+			auto consoleTo = Point2D::add(Console::CursorPosition, direction);
+			auto to = Map::positionFromConsolePosition(consoleTo);
+
+			if (Map::contains(to) && Map::player()->getView(to, Map::size().Width)->State == 2)
+			{
+				at = to;
+				Console::CursorPosition = consoleTo;
+			}
+
+			UI::log("Fire at what? - " + Map::getTileDescription(at) + " - (Direction / Confirm)");
+
+			if (!direction.isZero()) Console::resetCursorTimer();
+
+			return;
+		}
+
 		// Open / close
 		if (_commandActive == InputCommand_OpenClose)
 		{
@@ -170,6 +223,44 @@ void Input::handleKey(SDL_Keycode key)
 	{
 		_commandActive = InputCommand_Examine;
 		UI::log("Examine what? - " + Map::getTileDescription(Map::player()->position()) + " - (Direction / Confirm)");
+		Console::CursorSize = 1.0;
+		Console::resetCursorTimer();
+
+		return;
+	}
+
+	// Fire - 'f'
+	if (key == SDLK_f)
+	{
+		auto rangedWeapon = Map::player()->getEquipment(L"in right hand");
+
+		if (rangedWeapon == nullptr)
+		{
+			UI::log("You have no ranged weapon ready.");
+			return;
+		}
+
+		auto uses = rangedWeapon->getBehaviorPropertyEffectValue(L"equipment", L"used-effects", L"uses");
+
+		if (uses.length() > 0)
+		{
+			auto missles = Map::player()->getEquipment(L"as missles");
+
+			if (missles == nullptr)
+			{
+				UI::log("You have no " + Strings::from(uses) + " ready.");
+				return;
+			}
+
+			if (missles->getBehaviorProperty(L"equipment", L"missle-type").compare(uses) != 0)
+			{
+				UI::log("You need have " + Strings::from(uses) + " ready.");
+				return;
+			}
+		}
+
+		_commandActive = InputCommand_Fire;
+		UI::log("Fire at what? - " + Map::getTileDescription(Map::player()->position()) + " - (Direction / Confirm)");
 		Console::CursorSize = 1.0;
 		Console::resetCursorTimer();
 
